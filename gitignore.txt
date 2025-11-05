@@ -1,0 +1,87 @@
+# === Unity ignore ===
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Mm]emoryCaptures/
+!*.meta
+
+# Unity cache and settings
+/[Uu]ser[Ss]ettings/
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# === AR related  ===
+/[Aa]ssets/Plugins/Android/
+!/Assets/Plugins/Android/*.gradle
+!/Assets/Plugins/Android/AndroidManifest.xml
+/[Aa]ssets/Plugins/iOS/ARKitGenerated/
+/[Aa]ssets/Plugins/ARFoundationSamples/
+
+/[Packages]/manifest.json
+/[Packages]/packages-lock.json
+
+# === Build related  ===
+# Android / iOS builds
+*.apk
+*.aab
+*.ipa
+*.xcuserstate
+*.xcworkspace
+*.xcsettings
+*.xcuserdata/
+/[Bb]uilds/
+/[Bb]uild/
+/[Pp]ublish/
+
+# === Standalone builds related  ===
+*.exe
+*.app
+*.dll
+*.dmg
+*.pkg
+
+# === IDE  ===
+# JetBrains Rider
+.idea/
+.vscode/
+.vs/
+*.VisualStudio/
+*.sln.iml
+
+# Unity Collaborate
+/[Cc]ollab/
+/[Cc]ollabSnapshot/
+
+# === Other  ===
+# Logs
+*.log
+
+# Crash and report files
+sysinfo.txt
+*.stacktrace
+
+# === Unity cloud ===
+/[Uu]ser[Ss]ettings/
+/[Cc]acheServer/
+
