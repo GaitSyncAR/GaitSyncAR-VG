@@ -1,0 +1,35 @@
+# Unity Generated Folders
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+
+# Visual Studio & Files
+*.csproj
+*.sln
+*.user
+*.unityproj
+*.pidb
+*.booproj
+*.svd
+.vs/
+.vscode/
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Tracking large assets in Git LFS (Textures, Audio, Videos, Models) using LFS, dont ignore
+# git lfs track "*.psd"
+# git lfs track "*.png"
+# git lfs track "*.jpg"
+# git lfs track "*.wav"
+# git lfs track "*.mp4"
+# git lfs track "*.fbx"
+# git lfs track "*.obj"
+# git lfs track "*.blend"
