@@ -1,5 +1,0 @@
-C:/Users/Pixel/GaitSyncAR_V3.1/.utmp/RelWithDebInfo/4x5g3360/arm64-v8a/CMakeFiles/edit_cache.dir
-C:/Users/Pixel/GaitSyncAR_V3.1/.utmp/RelWithDebInfo/4x5g3360/arm64-v8a/CMakeFiles/rebuild_cache.dir
-C:/Users/Pixel/GaitSyncAR_V3.1/.utmp/RelWithDebInfo/4x5g3360/arm64-v8a/GameActivity/CMakeFiles/game.dir
-C:/Users/Pixel/GaitSyncAR_V3.1/.utmp/RelWithDebInfo/4x5g3360/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
-C:/Users/Pixel/GaitSyncAR_V3.1/.utmp/RelWithDebInfo/4x5g3360/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir

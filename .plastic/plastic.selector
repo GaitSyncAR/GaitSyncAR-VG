@@ -1,4 +1,0 @@
-repository "GaitSyncAR_V3.1/GaitSyncAR_V3.1@5773944049819@cloud"
-  path "/"
-    br "/main"
-    co "/main"
