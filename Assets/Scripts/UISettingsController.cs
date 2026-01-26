@@ -58,7 +58,8 @@ public class UISettingsController : MonoBehaviour
         targetMaterial.SetColor("_SpecColor", newColor);
         targetMaterial.SetColor("_EmissionColor", newColor);
 
-        colorPreview.style.backgroundColor = new StyleColor(newColor);
+        // removed for now
+        // colorPreview.style.backgroundColor = new StyleColor(newColor);
     }
 
     private void UpdateTransform()
@@ -66,7 +67,7 @@ public class UISettingsController : MonoBehaviour
         if (metronomeObject == null) return;
 
         // Map slider values to position and scale
-        float x = xSlider.value;
+        float x = xSlider.value; // scale position range
         float y = ySlider.value;
         float size = sizeSlider.value;
 
