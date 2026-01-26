@@ -6,7 +6,6 @@ public class UISettingsController : MonoBehaviour
     public UIDocument uiDocument;
     public Material targetMaterial;
 
-    private VisualElement colorPreview;
     private Slider redSlider;
     private Slider greenSlider;
     private Slider blueSlider;
@@ -20,13 +19,16 @@ public class UISettingsController : MonoBehaviour
 
     void OnEnable()
     {
+        #if UNITY_EDITOR
+        if (!Application.isPlaying) return;
+        #endif
+
         var root = uiDocument.rootVisualElement;
 
         // Color sliders
         redSlider = root.Q<Slider>("RedSlider");
         greenSlider = root.Q<Slider>("GreenSlider");
         blueSlider = root.Q<Slider>("BlueSlider");
-        colorPreview = root.Q<VisualElement>("ColourPreview");
 
         // Transform sliders
         xSlider = root.Q<Slider>("XSlider");
@@ -57,9 +59,6 @@ public class UISettingsController : MonoBehaviour
         targetMaterial.SetColor("_BaseColor", newColor);
         targetMaterial.SetColor("_SpecColor", newColor);
         targetMaterial.SetColor("_EmissionColor", newColor);
-
-        // removed for now
-        // colorPreview.style.backgroundColor = new StyleColor(newColor);
     }
 
     private void UpdateTransform()
