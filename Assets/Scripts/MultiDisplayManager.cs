@@ -29,6 +29,9 @@ public class MultiDisplayManager : MonoBehaviour
         int displayCount = Display.displays.Length;
         Debug.Log("Detected displays: " + displayCount);
 
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
+
         // Activate all external displays
         for (int i = 1; i < displayCount; i++)
         {

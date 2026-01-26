@@ -8,24 +8,16 @@ public class MetronomeArm : MonoBehaviour
 
     [Tooltip("Maximum angle (degrees) left/right from center")]
     public float maxAngle = 30f;
+    private float phase = 0f;
 
-    private float startTime;
-
-    private void Start()
-    {
-        startTime = Time.time;
-    }
-
-    private void Update()
+    private void LateUpdate()
     {
         // Beats per second
         float bps = bpm / 60f;
 
-        // Time since start in seconds
-        float t = Time.time - startTime;
+        // Advancing phase smoothly
+        phase += Time.deltaTime * bps * 2f * Mathf.PI;
 
-        // Use a sine wave to swing the arm
-        float phase = t * bps * 2f * Mathf.PI;  // full sine cycle per beat
         float angle = maxAngle * Mathf.Sin(phase);
 
         // Rotate around local Z axis (change axis if your model needs X or Y)

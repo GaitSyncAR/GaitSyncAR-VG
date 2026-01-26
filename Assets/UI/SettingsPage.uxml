@@ -1,9 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
-<ui:UXML
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:ui="UnityEngine.UIElements"
-    xmlns:uie="UnityEditor.UIElements"
-    xsi:noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd"
->
-    
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Label text="Metronome Settings" name="Title" style="white-space: nowrap; -unity-text-align: upper-center; text-overflow: clip; -unity-font-style: bold; font-size: 50%; -unity-text-outline-color: rgb(0, 0, 0); color: rgb(255, 255, 255); -unity-text-outline-width: 0;" />
+    <ui:VisualElement name="virtualScreen" style="flex-grow: 1;">
+        <ui:VisualElement name="FakeScreen" style="flex-grow: 1; position: absolute; height: 796px; width: 1440px; top: 25px; left: 20%; border-top-left-radius: 5px; border-top-right-radius: 5px; border-bottom-right-radius: 5px; border-bottom-left-radius: 5px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); border-top-width: 5px; border-right-width: 5px; border-bottom-width: 5px; border-left-width: 5px; background-size: 100% 70%;">
+            <ui:VisualElement name="metronome" style="flex-grow: 1; position: absolute; height: 100%; width: 100%; top: 0; left: -1px; background-image: url(&quot;project://database/Assets/UI/Textures/CameraRender.renderTexture?fileID=8400000&amp;guid=b0281ebb197c54f47a04371b7a65148a&amp;type=2#CameraRender&quot;); -unity-background-image-tint-color: rgb(255, 255, 255); background-color: rgba(255, 255, 255, 0);" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:GroupBox name="Buttons" style="height: 193px;">
+        <ui:Button text="Lock Screen" name="LockScreenBtn" style="position: absolute; top: 25%; left: 32.5%; height: 50%; width: 35%; font-size: 50%; border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; background-color: rgb(255, 255, 255);" />
+    </ui:GroupBox>
 </ui:UXML>
