@@ -927,7 +927,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ColorSliderController
   uiDocument: {fileID: 773190230}
   targetMaterial: {fileID: 2100000, guid: 564e6cadbc3efd94983c28b403e71369, type: 2}
-  metronomeObject: {fileID: 1606666391}
 --- !u!4 &1964602099
 Transform:
   m_ObjectHideFlags: 0
