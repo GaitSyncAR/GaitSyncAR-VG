@@ -1,10 +1,19 @@
 # ninja log v5
 222	1773	7874625611439110	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	e3c2484be403e60
 205	1784	7874625611539569	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	170d8a1491ec6125
-233	1812	7874625611858341	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	dc19a19c5cba06fc
-0	1821	7874625611974042	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	48ddae49c9a21fbd
 196	1891	7874625612669536	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	1c298d38dae1c09e
+233	1812	7874625611858341	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	dc19a19c5cba06fc
 244	2020	7874625613967915	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	51f66933dfcb6c67
+0	1821	7874625611974042	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	48ddae49c9a21fbd
 214	2062	7874625614376306	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	cc932f0f11bcc35d
 187	2170	7874625615428683	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	927d7ce37b6d4f40
 2170	2563	7874625619393468	C:/Users/Pixel/Downloads/GaitSyncAR-VG/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/37464t4k/obj/arm64-v8a/libgame.so	483eb67c37bd65e7
+213	1688	7911019034980821	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	e3c2484be403e60
+206	1710	7911019035193495	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	170d8a1491ec6125
+184	1727	7911019035345035	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	48ddae49c9a21fbd
+230	1730	7911019035375046	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	dc19a19c5cba06fc
+191	1843	7911019036505991	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	1c298d38dae1c09e
+221	1976	7911019037844236	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	51f66933dfcb6c67
+198	1987	7911019037955194	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	cc932f0f11bcc35d
+7	2120	7911019039281081	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	927d7ce37b6d4f40
+2121	2520	7911019043283997	C:/Users/Pixel/Downloads/GaitSyncAR-VG/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/37464t4k/obj/arm64-v8a/libgame.so	483eb67c37bd65e7
