@@ -6,6 +6,9 @@ public class MetronomeArm : MonoBehaviour
     [Tooltip("Beats per minute")]
     public float bpm = 120f;
 
+    [Header("IsRunning")]
+    public bool isRunning = false;
+
     [Tooltip("Maximum angle (degrees) left/right from center")]
     public float maxAngle = 30f;
 
@@ -29,6 +32,8 @@ public class MetronomeArm : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (!isRunning) return;
+        
         // Beats per second
         float bps = bpm / 60f;
         float angularFrequency = bps * Mathf.PI;

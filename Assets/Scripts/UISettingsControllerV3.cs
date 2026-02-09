@@ -7,23 +7,26 @@ public class UISettingsControllerV3 : MonoBehaviour
     [Header("UI Setup")]
     public UIDocument uiDocument;
     
-    [Header("Metronome Settings")]
-    public Transform metronomeObject;
-    public Renderer metronomeRenderer; // Assign the object's renderer here
-    public float movementStep = 0.5f; // How much it moves per click
-    public float scaleStep = 0.1f;    // How much it grows per click
-    public int bpm = 120;
+    [Header("Metronome References")]
+    public MetronomeArm metronomeArm; 
+    
+    public Renderer metronomeRenderer; 
+    
+    [Header("Movement Settings")]
+    public Transform metronomeObject; // The object to move/scale (Parent)
+    public float movementStep = 0.5f; 
+    public float scaleStep = 0.1f;
+
+    [Header("Preview Settings")]
+    public RenderTexture metronomePreviewTexture;
 
     // --- PRIVATE UI REFERENCES ---
     private VisualElement root;
     private VisualElement remotePage;
     private VisualElement calibrationPage;
-    
-    // Remote Page Elements
     private Label bpmLabel;
     private Button startStopBtn;
-    private bool isRunning = false;
-
+    
     // Calibration Page Containers
     private VisualElement positionControls;
     private VisualElement shapeControls;
@@ -31,91 +34,62 @@ public class UISettingsControllerV3 : MonoBehaviour
 
     void Start()
     {
-        // Ensuring we are actually playing the game
-        // This prevents the code from running while the Editor is just loading
         if (!Application.isPlaying) return;
+        if (uiDocument == null) return;
 
-        if (uiDocument == null)
-        {
-            Debug.LogError("UI Document is not assigned!");
-            return;
-        }
+        root = uiDocument.rootVisualElement;
 
-        root = uiDocument.rootVisualElement.Q<VisualElement>("Root");
-
-        // 1. INITIALIZE PAGES
+        // 1. Setup Navigation
         SetupNavigation();
 
-        // 2. INITIALIZE REMOTE CONTROLS (Walking Mode)
+        // 2. Setup Remote (BPM Control)
         SetupRemotePage();
 
-        // 3. INITIALIZE CALIBRATION TABS
+        // 3. Setup Calibration
         SetupCalibrationTabs();
-
-        // 4. INITIALIZE SETUP CONTROLS (Stepper Buttons)
         SetupPositionControls();
         SetupShapeControls();
         SetupColorControls();
+
+        // Assigning rendered texture safely
+        var metronomePreview = calibrationPage.Q<VisualElement>("Metronome");
+        if (metronomePreview != null && metronomePreviewTexture != null)
+        {
+            metronomePreview.style.backgroundImage = Background.FromRenderTexture(metronomePreviewTexture);
+        }
     }
 
     // =========================================================
-    // 1. NAVIGATION LOGIC
+    // NAVIGATION
     // =========================================================
-    // testing changes v2
     private void SetupNavigation()
     {
         remotePage = root.Q<VisualElement>("RemotePage");
         calibrationPage = root.Q<VisualElement>("CalibrationPage");
 
-        // Button to go to Settings
-        var toSettingsBtn = remotePage.Q<Button>(); // It's inside the Title label
-        // testing crash
-
-        // Button to go back to Remote
+        var toSettingsBtn = remotePage.Q<Button>(); // Settings button inside Title
         var backBtn = root.Q<Button>("BackBtn");
 
-        toSettingsBtn.RegisterCallback<ClickEvent>(e => SwitchPage(showCalibration: true));
-        backBtn.RegisterCallback<ClickEvent>(e => SwitchPage(showCalibration: false));
+        toSettingsBtn.RegisterCallback<ClickEvent>(e => SwitchPage(true));
+        backBtn.RegisterCallback<ClickEvent>(e => SwitchPage(false));
     }
 
     private void SwitchPage(bool showCalibration)
     {
         if (showCalibration)
         {
-            // HIDE REMOTE PAGE
-            if (remotePage != null)
-            {
-                remotePage.style.display = DisplayStyle.None;
-                remotePage.style.visibility = Visibility.Hidden; // Double-tap: Hide visually too
-            }
-
-            // SHOW CALIBRATION PAGE
-            if (calibrationPage != null)
-            {
-                calibrationPage.style.display = DisplayStyle.Flex;
-                calibrationPage.style.visibility = Visibility.Visible;
-            }
+            if (remotePage != null) remotePage.style.display = DisplayStyle.None;
+            if (calibrationPage != null) calibrationPage.style.display = DisplayStyle.Flex;
         }
         else
         {
-            // HIDE CALIBRATION PAGE
-            if (calibrationPage != null)
-            {
-                calibrationPage.style.display = DisplayStyle.None;
-                calibrationPage.style.visibility = Visibility.Hidden;
-            }
-
-            // SHOW REMOTE PAGE
-            if (remotePage != null)
-            {
-                remotePage.style.display = DisplayStyle.Flex;
-                remotePage.style.visibility = Visibility.Visible;
-            }
+            if (calibrationPage != null) calibrationPage.style.display = DisplayStyle.None;
+            if (remotePage != null) remotePage.style.display = DisplayStyle.Flex;
         }
     }
 
     // =========================================================
-    // 2. REMOTE PAGE LOGIC
+    // REMOTE PAGE (BPM LOGIC UPDATED)
     // =========================================================
     private void SetupRemotePage()
     {
@@ -133,22 +107,30 @@ public class UISettingsControllerV3 : MonoBehaviour
 
     private void ChangeBPM(int amount)
     {
-        bpm += amount;
-        if (bpm < 10) bpm = 10; // Safety floor
+        if (metronomeArm == null) return;
+        metronomeArm.bpm += amount;
+
+        // Safety floor (cannot go below 0)
+        if (metronomeArm.bpm < 0) metronomeArm.bpm = 0;
+
         UpdateBPMDisplay();
         PlayHaptic();
     }
 
     private void UpdateBPMDisplay()
     {
-        bpmLabel.text = bpm.ToString();
+        if (metronomeArm != null && bpmLabel != null)
+        {
+            // Update the label with the real value
+            bpmLabel.text = metronomeArm.bpm.ToString("0"); // "0" formats as whole number
+        }
     }
 
     private void ToggleStartStop()
     {
-        isRunning = !isRunning;
+        metronomeArm.isRunning = !metronomeArm.isRunning; // Toggle the actual metronome state
         
-        if (isRunning)
+        if (metronomeArm.isRunning)
         {
             startStopBtn.style.backgroundColor = new StyleColor(new Color(0, 0.89f, 1f)); // Cyan
             startStopBtn.text = "■ STOP";
@@ -161,13 +143,10 @@ public class UISettingsControllerV3 : MonoBehaviour
             startStopBtn.style.color = Color.white;
         }
         PlayHaptic();
-        
-        // TODO: Hook into your audio/metronome logic here
-        // e.g., MetronomeSystem.SetRunning(isRunning);
     }
 
     // =========================================================
-    // 3. CALIBRATION TABS
+    // CALIBRATION & TABS
     // =========================================================
     private void SetupCalibrationTabs()
     {
@@ -175,139 +154,72 @@ public class UISettingsControllerV3 : MonoBehaviour
         shapeControls = root.Q<VisualElement>("ShapeControls");
         colourControls = root.Q<VisualElement>("ColourControls");
 
-        var posBtn = root.Q<Button>("PosBtn");
-        var shapeBtn = root.Q<Button>("ShapeBtn");
-        var colBtn = root.Q<Button>("ColourBtn");
-
-        posBtn.clicked += () => ShowTab("pos");
-        shapeBtn.clicked += () => ShowTab("shape");
-        colBtn.clicked += () => ShowTab("col");
-
-        // Default to Position tab
+        root.Q<Button>("PosBtn").clicked += () => ShowTab("pos");
+        root.Q<Button>("ShapeBtn").clicked += () => ShowTab("shape");
+        root.Q<Button>("ColourBtn").clicked += () => ShowTab("col");
+        
         ShowTab("pos");
     }
 
     private void ShowTab(string tabName)
     {
-        // Hide all
         positionControls.style.display = DisplayStyle.None;
         shapeControls.style.display = DisplayStyle.None;
         colourControls.style.display = DisplayStyle.None;
 
-        // Show active
-        switch (tabName)
-        {
-            case "pos": positionControls.style.display = DisplayStyle.Flex; break;
-            case "shape": shapeControls.style.display = DisplayStyle.Flex; break;
-            case "col": colourControls.style.display = DisplayStyle.Flex; break;
-        }
+        if (tabName == "pos") positionControls.style.display = DisplayStyle.Flex;
+        else if (tabName == "shape") shapeControls.style.display = DisplayStyle.Flex;
+        else if (tabName == "col") colourControls.style.display = DisplayStyle.Flex;
+        
         PlayHaptic();
     }
 
     // =========================================================
-    // 4. STEPPER CONTROLS (Position/Shape)
+    // POSITION / SHAPE / COLOR
     // =========================================================
     private void SetupPositionControls()
     {
-        // The UXML uses the same name "Horizontal_slot" for all 3 rows. 
-        // We must access them by index.
         List<VisualElement> rows = positionControls.Query("Horizontal_slot").ToList();
-
-        // --- Row 0: X Axis ---
-        var leftBtnX = rows[0].Q<Button>("Left");
-        var rightBtnX = rows[0].Q<Button>("Right");
-        var labelX = rows[0].Q<Button>("XPos"); // Middle button used as label
-
-        leftBtnX.clicked += () => MoveObject(new Vector3(-movementStep, 0, 0), labelX);
-        rightBtnX.clicked += () => MoveObject(new Vector3(movementStep, 0, 0), labelX);
-
-        // --- Row 1: Y Axis ---
-        var downBtnY = rows[1].Q<Button>("Right"); // UXML named it "Right" (Down arrow)
-        var upBtnY = rows[1].Q<Button>("Left");    // UXML named it "Left" (Up arrow)
-        var labelY = rows[1].Q<Button>("XPos");
-
-        upBtnY.clicked += () => MoveObject(new Vector3(0, movementStep, 0), labelY);
-        downBtnY.clicked += () => MoveObject(new Vector3(0, -movementStep, 0), labelY);
-
-        // --- Row 2: Z Axis ---
-        var farBtnZ = rows[2].Q<Button>("Right"); // "Far"
-        var nearBtnZ = rows[2].Q<Button>("Left");  // "Near"
-        var labelZ = rows[2].Q<Button>("XPos");
-
-        nearBtnZ.clicked += () => MoveObject(new Vector3(0, 0, -movementStep), labelZ);
-        farBtnZ.clicked += () => MoveObject(new Vector3(0, 0, movementStep), labelZ);
+        
+        // X Axis
+        rows[0].Q<Button>("Left").clicked += () => MoveObject(new Vector3(-movementStep, 0, 0));
+        rows[0].Q<Button>("Right").clicked += () => MoveObject(new Vector3(movementStep, 0, 0));
+        
+        // Y Axis
+        rows[1].Q<Button>("Left").clicked += () => MoveObject(new Vector3(0, movementStep, 0));
+        rows[1].Q<Button>("Right").clicked += () => MoveObject(new Vector3(0, -movementStep, 0));
+        
+        // Z Axis
+        rows[2].Q<Button>("Left").clicked += () => MoveObject(new Vector3(0, 0, -movementStep));
+        rows[2].Q<Button>("Right").clicked += () => MoveObject(new Vector3(0, 0, movementStep));
     }
 
     private void SetupShapeControls()
     {
         List<VisualElement> rows = shapeControls.Query("Horizontal_slot").ToList();
 
-        // --- Row 0: Uniform Size ---
-        var shrinkBtn = rows[0].Q<Button>("Left");
-        var growBtn = rows[0].Q<Button>("Right");
+        // Size
+        rows[0].Q<Button>("Left").clicked += () => ScaleObject(-scaleStep, false);
+        rows[0].Q<Button>("Right").clicked += () => ScaleObject(scaleStep, false);
         
-        shrinkBtn.clicked += () => ScaleObject(-scaleStep, false);
-        growBtn.clicked += () => ScaleObject(scaleStep, false);
-
-        // --- Row 1: X Stretch ---
-        var squishBtn = rows[1].Q<Button>("Left");
-        var stretchBtn = rows[1].Q<Button>("Right");
-
-        squishBtn.clicked += () => ScaleObject(-scaleStep, true);
-        stretchBtn.clicked += () => ScaleObject(scaleStep, true);
+        // Stretch
+        rows[1].Q<Button>("Left").clicked += () => ScaleObject(-scaleStep, true);
+        rows[1].Q<Button>("Right").clicked += () => ScaleObject(scaleStep, true);
     }
 
-    private void MoveObject(Vector3 delta, Button displayLabel)
-    {
-        if (metronomeObject == null) return;
-        metronomeObject.position += delta;
-        PlayHaptic();
-    }
-
-    private void ScaleObject(float amount, bool isStretchOnly)
-    {
-        if (metronomeObject == null) return;
-
-        if (isStretchOnly)
-        {
-            // Only affect X axis
-            Vector3 newScale = metronomeObject.localScale;
-            newScale.x += amount;
-            // Prevent inverting
-            if(newScale.x < 0.1f) newScale.x = 0.1f; 
-            metronomeObject.localScale = newScale;
-        }
-        else
-        {
-            // Affect all axes
-            metronomeObject.localScale += Vector3.one * amount;
-        }
-        PlayHaptic();
-    }
-
-    // =========================================================
-    // 5. COLOR CONTROLS
-    // =========================================================
     private void SetupColorControls()
     {
-        // Notice: In UXML, Sliders are children of the VisualElements named "Red_Slider", etc.
         var rSlider = colourControls.Q("Red_Slider").Q<SliderInt>();
         var gSlider = colourControls.Q("Green_Slider").Q<SliderInt>();
         var bSlider = colourControls.Q("Blue_Slider").Q<SliderInt>();
 
-        // Init default color
-        if (metronomeRenderer != null)
-        {
-             Color current = metronomeRenderer.sharedMaterial.color;
-             rSlider.value = (int)(current.r * 100);
-             gSlider.value = (int)(current.g * 100);
-             bSlider.value = (int)(current.b * 100);
-        }
-
         System.Action<int> onColorChange = (val) => 
         {
-            Color newCol = new Color(rSlider.value / 100f, gSlider.value / 100f, bSlider.value / 100f);
-            UpdateMetronomeColor(newCol);
+            if (metronomeRenderer != null)
+            {
+                Color newCol = new Color(rSlider.value / 100f, gSlider.value / 100f, bSlider.value / 100f);
+                metronomeRenderer.sharedMaterial.color = newCol;
+            }
         };
 
         rSlider.RegisterValueChangedCallback(evt => onColorChange(evt.newValue));
@@ -315,25 +227,31 @@ public class UISettingsControllerV3 : MonoBehaviour
         bSlider.RegisterValueChangedCallback(evt => onColorChange(evt.newValue));
     }
 
-    private void UpdateMetronomeColor(Color c)
-    {
-        if (metronomeRenderer == null) return;
-
-        metronomeRenderer.sharedMaterial.color = c; 
-        
-        // If URP/HDRP or Emission is used:
-        metronomeRenderer.sharedMaterial.SetColor("_BaseColor", c);
-        metronomeRenderer.sharedMaterial.SetColor("_EmissionColor", c);
-    }
-
     // =========================================================
     // UTILS
     // =========================================================
+    private void MoveObject(Vector3 delta)
+    {
+        if (metronomeObject != null) metronomeObject.position += delta;
+        PlayHaptic();
+    }
+
+    private void ScaleObject(float amount, bool isStretchOnly)
+    {
+        if (metronomeObject == null) return;
+        Vector3 newScale = metronomeObject.localScale;
+        
+        if (isStretchOnly) newScale.x = Mathf.Max(0.1f, newScale.x + amount);
+        else newScale += Vector3.one * amount;
+        
+        metronomeObject.localScale = newScale;
+        PlayHaptic();
+    }
+
     private void PlayHaptic()
     {
-        // Simple vibration for feedback
         #if UNITY_ANDROID || UNITY_IOS
-                Handheld.Vibrate();
+        Handheld.Vibrate();
         #endif
     }
 }

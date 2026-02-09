@@ -447,11 +447,6 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
---- !u!23 &594930405 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 5532120270729304140, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
-  m_PrefabInstance: {fileID: 221616749}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &687329261 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8092911142594393520, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
@@ -900,12 +895,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f61b8ed78896459489c2dd68af88d0ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISettingsControllerV3
-  uiDocument: {fileID: 773190230}
-  metronomeObject: {fileID: 687329261}
-  metronomeRenderer: {fileID: 594930405}
+  uiDocument: {fileID: 0}
+  metronomeArm: {fileID: 0}
+  metronomeRenderer: {fileID: 0}
+  metronomeObject: {fileID: 0}
   movementStep: 0.5
   scaleStep: 0.1
-  bpm: 120
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
