@@ -29,15 +29,19 @@ public class UISettingsControllerV3 : MonoBehaviour
     private VisualElement shapeControls;
     private VisualElement colourControls;
 
-    void OnEnable()
+    void Start()
     {
+        // Ensuring we are actually playing the game
+        // This prevents the code from running while the Editor is just loading
+        if (!Application.isPlaying) return;
+
         if (uiDocument == null)
         {
             Debug.LogError("UI Document is not assigned!");
             return;
         }
 
-        root = uiDocument.rootVisualElement;
+        root = uiDocument.rootVisualElement.Q<VisualElement>("Root");
 
         // 1. INITIALIZE PAGES
         SetupNavigation();
@@ -78,15 +82,36 @@ public class UISettingsControllerV3 : MonoBehaviour
     {
         if (showCalibration)
         {
-            remotePage.style.display = DisplayStyle.None;
-            calibrationPage.style.display = DisplayStyle.Flex;
+            // HIDE REMOTE PAGE
+            if (remotePage != null)
+            {
+                remotePage.style.display = DisplayStyle.None;
+                remotePage.style.visibility = Visibility.Hidden; // Double-tap: Hide visually too
+            }
+
+            // SHOW CALIBRATION PAGE
+            if (calibrationPage != null)
+            {
+                calibrationPage.style.display = DisplayStyle.Flex;
+                calibrationPage.style.visibility = Visibility.Visible;
+            }
         }
         else
         {
-            calibrationPage.style.display = DisplayStyle.None;
-            remotePage.style.display = DisplayStyle.Flex;
+            // HIDE CALIBRATION PAGE
+            if (calibrationPage != null)
+            {
+                calibrationPage.style.display = DisplayStyle.None;
+                calibrationPage.style.visibility = Visibility.Hidden;
+            }
+
+            // SHOW REMOTE PAGE
+            if (remotePage != null)
+            {
+                remotePage.style.display = DisplayStyle.Flex;
+                remotePage.style.visibility = Visibility.Visible;
+            }
         }
-        PlayHaptic();
     }
 
     // =========================================================
