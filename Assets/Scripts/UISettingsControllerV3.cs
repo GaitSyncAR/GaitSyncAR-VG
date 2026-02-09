@@ -12,6 +12,7 @@ public class UISettingsControllerV3 : MonoBehaviour
     public Renderer metronomeRenderer;
     public Transform metronomeBar;
     public Transform metronomeArmVisuals;
+    public Material targetMaterial;
     
     [Header("Movement Settings")]
     public Transform metronomeObject; // The object to move/scale (Parent)
@@ -108,15 +109,6 @@ public class UISettingsControllerV3 : MonoBehaviour
         if (metronomeArmVisuals != null)
             PlayerPrefs.SetFloat("Meta_ArmScaleY", metronomeArmVisuals.localScale.y);
 
-        // 4. Save Color
-        if (metronomeRenderer != null)
-        {
-            Color c = metronomeRenderer.sharedMaterial.color;
-            PlayerPrefs.SetFloat("Meta_ColR", c.r);
-            PlayerPrefs.SetFloat("Meta_ColG", c.g);
-            PlayerPrefs.SetFloat("Meta_ColB", c.b);
-        }
-
         PlayerPrefs.Save(); // Write to disk
         Debug.Log("Settings Saved!");
     }
@@ -156,23 +148,7 @@ public class UISettingsControllerV3 : MonoBehaviour
         }
 
         // load local stretch (disabled)
-
-        // 4. Load Color
-        if (metronomeRenderer != null && PlayerPrefs.HasKey("Meta_ColR"))
-        {
-            Color c = new Color(
-                PlayerPrefs.GetFloat("Meta_ColR"),
-                PlayerPrefs.GetFloat("Meta_ColG"),
-                PlayerPrefs.GetFloat("Meta_ColB")
-            );
-            metronomeRenderer.sharedMaterial.color = c;
-            if (metronomeRenderer.sharedMaterial.HasProperty("_BaseColor"))
-                metronomeRenderer.sharedMaterial.SetColor("_BaseColor", c);
-            
-            // Update Sliders visually to match loaded color
-            // (Wait a frame or set directly if elements exist)
-            // We skip this for simplicity, but the color on the object will be right.
-        }
+        // load colour, disabled for now
 
         Debug.Log("Settings Loaded!");
     }
@@ -330,18 +306,30 @@ public class UISettingsControllerV3 : MonoBehaviour
 
     private void SetupColorControls()
     {
+        if (targetMaterial == null) return;
+
         var rSlider = colourControls.Q("Red_Slider").Q<SliderInt>();
         var gSlider = colourControls.Q("Green_Slider").Q<SliderInt>();
         var bSlider = colourControls.Q("Blue_Slider").Q<SliderInt>();
+
+        // initlize starting color values on sliders
+        Color c = targetMaterial.color;
+        rSlider.value = Mathf.RoundToInt(c.r * 255f);
+        gSlider.value = Mathf.RoundToInt(c.g * 255f);
+        bSlider.value = Mathf.RoundToInt(c.b * 255f);
 
         System.Action<int> onColorChange = (val) => 
         {
             if (metronomeRenderer != null)
             {
-                Color newCol = new Color(rSlider.value / 100f, gSlider.value / 100f, bSlider.value / 100f);
-                metronomeRenderer.sharedMaterial.color = newCol;
+                Color newColor = new Color(rSlider.value / 255f , gSlider.value / 255f , bSlider.value / 255f, 1f);
+
+                targetMaterial.SetColor("_BaseColor", newColor);
+                targetMaterial.SetColor("_SpecColor", newColor);
+                targetMaterial.SetColor("_EmissionColor", newColor);
             }
         };
+        
 
         rSlider.RegisterValueChangedCallback(evt => onColorChange(evt.newValue));
         gSlider.RegisterValueChangedCallback(evt => onColorChange(evt.newValue));
