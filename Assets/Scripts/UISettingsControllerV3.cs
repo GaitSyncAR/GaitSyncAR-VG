@@ -9,8 +9,9 @@ public class UISettingsControllerV3 : MonoBehaviour
     
     [Header("Metronome References")]
     public MetronomeArm metronomeArm; 
-    
-    public Renderer metronomeRenderer; 
+    public Renderer metronomeRenderer;
+    public Transform metronomeBar;
+    public Transform metronomeArmVisuals;
     
     [Header("Movement Settings")]
     public Transform metronomeObject; // The object to move/scale (Parent)
@@ -67,7 +68,7 @@ public class UISettingsControllerV3 : MonoBehaviour
         remotePage = root.Q<VisualElement>("RemotePage");
         calibrationPage = root.Q<VisualElement>("CalibrationPage");
 
-        var toSettingsBtn = remotePage.Q<Button>(); // Settings button inside Title
+        var toSettingsBtn = root.Q<Button>("ToSettings"); // Settings button inside Title
         var backBtn = root.Q<Button>("BackBtn");
 
         toSettingsBtn.RegisterCallback<ClickEvent>(e => SwitchPage(true));
@@ -94,9 +95,10 @@ public class UISettingsControllerV3 : MonoBehaviour
     private void SetupRemotePage()
     {
         bpmLabel = root.Q<Label>("BPM-lbl");
+        
         var increaseBtn = root.Q<Button>("increase");
         var decreaseBtn = root.Q<Button>("decrease");
-        startStopBtn = root.Q<Button>("StartStop");
+        startStopBtn = remotePage.Q<Button>("StartStop");
 
         increaseBtn.clicked += () => ChangeBPM(5);
         decreaseBtn.clicked += () => ChangeBPM(-5);
@@ -203,8 +205,8 @@ public class UISettingsControllerV3 : MonoBehaviour
         rows[0].Q<Button>("Right").clicked += () => ScaleObject(scaleStep, false);
         
         // Stretch
-        rows[1].Q<Button>("Left").clicked += () => ScaleObject(-scaleStep, true);
-        rows[1].Q<Button>("Right").clicked += () => ScaleObject(scaleStep, true);
+        rows[1].Q<Button>("Left").clicked += () => ScaleObject(-scaleStep * 20, true);
+        rows[1].Q<Button>("Right").clicked += () => ScaleObject(scaleStep * 20, true);
     }
 
     private void SetupColorControls()
@@ -238,13 +240,51 @@ public class UISettingsControllerV3 : MonoBehaviour
 
     private void ScaleObject(float amount, bool isStretchOnly)
     {
-        if (metronomeObject == null) return;
-        Vector3 newScale = metronomeObject.localScale;
-        
-        if (isStretchOnly) newScale.x = Mathf.Max(0.1f, newScale.x + amount);
-        else newScale += Vector3.one * amount;
-        
-        metronomeObject.localScale = newScale;
+        // CASE 1: STRETCH (WIDER BAR + LONGER ARM)
+        if (isStretchOnly)
+        {
+            // 1. Stretch the BAR Width
+            if (metronomeBar != null)
+            {
+                Vector3 barScale = metronomeBar.localScale;
+                barScale.y += amount; 
+                if (barScale.y < 0.1f) barScale.y = 0.1f;
+                metronomeBar.localScale = barScale;
+            }
+
+            // 2. Stretch the ARM Length & Position
+            if (metronomeArmVisuals != null)
+            {
+                amount /= 25f; // Scale down the stretch effect for the arm to keep it balanced with the bar growth
+                // A. Scale the Length (z-Axis)
+                Vector3 armScale = metronomeArmVisuals.localScale;
+                armScale.z += amount; 
+                
+                // Safety: Don't let it vanish or flip
+                if (armScale.z < 0.1f) 
+                {
+                    amount = 0; // Cancel the movement if we hit the limit
+                    armScale.z = 0.1f;
+                }
+                metronomeArmVisuals.localScale = armScale;
+
+                // B. Adjust Position (The "Pivot Fix")
+                // Move the arm down by half the amount of growth
+                // This keeps the top of the arm attached to the pivot!
+                Vector3 armPos = metronomeArmVisuals.localPosition;
+                armPos.y -= amount * 0.5f; 
+                
+                metronomeArmVisuals.localPosition = armPos;
+            }
+        }
+        // CASE 2: SIZE PARENT (UNIFORM)
+        else
+        {
+            if (metronomeObject == null) return;
+            Vector3 newScale = metronomeObject.localScale + (Vector3.one * amount);
+            if (newScale.x < 0.1f) newScale = Vector3.one * 0.1f;
+            metronomeObject.localScale = newScale;
+        }
         PlayHaptic();
     }
 

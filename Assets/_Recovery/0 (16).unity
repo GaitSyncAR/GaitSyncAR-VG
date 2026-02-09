@@ -131,10 +131,6 @@ PrefabInstance:
       propertyPath: bpm
       value: 100
       objectReference: {fileID: 0}
-    - target: {fileID: 3820462173310049436, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
-      propertyPath: isRunning
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4380511990860253802, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
       propertyPath: m_LocalScale.x
       value: 127.8745
