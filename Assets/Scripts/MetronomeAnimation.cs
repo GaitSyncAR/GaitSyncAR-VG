@@ -21,6 +21,12 @@ public class MetronomeArm : MonoBehaviour
     private float phase = 0f;
     private int lastHalfCycle = 0;
 
+    private void Start()
+    {
+        // init audio source
+        audioSource = GetComponent<AudioSource>();
+    }
+
     private void LateUpdate()
     {
         // Beats per second
