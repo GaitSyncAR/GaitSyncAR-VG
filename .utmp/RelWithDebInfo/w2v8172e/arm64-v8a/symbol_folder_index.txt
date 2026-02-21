@@ -1,0 +1,1 @@
+C:\Users\Karolis_LaptopV2\unity_github\GaitSyncAR-VG\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\build\intermediates\cxx\RelWithDebInfo\w2v8172e\obj\arm64-v8a

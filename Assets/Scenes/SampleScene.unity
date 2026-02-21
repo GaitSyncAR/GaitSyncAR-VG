@@ -946,6 +946,7 @@ MonoBehaviour:
   metronomeRenderer: {fileID: 594930405}
   metronomeBar: {fileID: 732765211}
   metronomeArmVisuals: {fileID: 887113179}
+  targetMaterial: {fileID: 2100000, guid: 564e6cadbc3efd94983c28b403e71369, type: 2}
   metronomeObject: {fileID: 687329261}
   movementStep: 0.5
   scaleStep: 0.1
