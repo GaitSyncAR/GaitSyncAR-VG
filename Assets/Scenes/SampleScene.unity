@@ -890,8 +890,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1964602099}
-  - component: {fileID: 1964602098}
   - component: {fileID: 1964602100}
+  - component: {fileID: 1964602101}
   m_Layer: 0
   m_Name: UIManager
   m_TagString: Untagged
@@ -899,21 +899,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1964602098
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1964602097}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7c73140fd9782714395090e757052477, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ColorSliderController
-  uiDocument: {fileID: 773190230}
-  targetMaterial: {fileID: 2100000, guid: 564e6cadbc3efd94983c28b403e71369, type: 2}
-  metronomeObject: {fileID: 687329261}
 --- !u!4 &1964602099
 Transform:
   m_ObjectHideFlags: 0
@@ -951,6 +936,20 @@ MonoBehaviour:
   movementStep: 0.5
   scaleStep: 0.1
   metronomePreviewTexture: {fileID: 8400000, guid: b0281ebb197c54f47a04371b7a65148a, type: 2}
+--- !u!114 &1964602101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1964602097}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1929acbafd5cf094bb8c83210d47a7c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UiScaler
+  uiDocument: {fileID: 773190230}
+  referenceResolution: {x: 1920, y: 1080}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
