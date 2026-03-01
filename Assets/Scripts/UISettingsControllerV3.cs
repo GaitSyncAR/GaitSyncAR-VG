@@ -22,6 +22,9 @@ public class UISettingsControllerV3 : MonoBehaviour
     [Header("Preview Settings")]
     public RenderTexture metronomePreviewTexture;
 
+    [Tooltip("UXML Template for profile rows in the Templates Page")]
+    public VisualTreeAsset profileRowTemplate;
+
     // --- PRIVATE UI REFERENCES ---
     private VisualElement root;
     private VisualElement remotePage;
@@ -280,12 +283,40 @@ public class UISettingsControllerV3 : MonoBehaviour
     }
 
     // =========================================================
-    // TEMPLATES PAGE (PLACEHOLDER)
+    // TEMPLATES PAGE
     // =========================================================
+    private ScrollView profileScrollView;
+
     private void SetupTemplatesPage()
     {
-        // This is a placeholder for the Templates page setup.
+        profileScrollView = root.Q<ScrollView>("ScrollView"); 
+        PopulateProfileList();
+    }
 
+    public void PopulateProfileList()
+    {
+        if (profileScrollView == null) return;
+
+        // Clearing out the dummy template
+        profileScrollView.Clear();
+
+        // fertching and looping over saved profiles to populate UI
+        List<string> savedProfiles = ProfileManager.Instance.GetAvailableProfiles();
+        foreach (string profileName in savedProfiles)
+        {
+            VisualElement newRow = profileRowTemplate.Instantiate();
+            Button rowButton = newRow.Q<Button>("SavedTemplateBtn"); 
+            
+            if (rowButton != null)
+            {
+                // Set the text of the button to the profile name
+                rowButton.text = profileName;
+            }
+
+            profileScrollView.Add(newRow);
+        }
+
+        Debug.Log($"Loaded {savedProfiles.Count} profiles into the UI.");
     }
 
     // =========================================================

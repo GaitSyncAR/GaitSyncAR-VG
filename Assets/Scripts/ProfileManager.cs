@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.IO;
+using System.Collections.Generic;
 
 public class ProfileManager 
 {
@@ -58,5 +59,26 @@ public class ProfileManager
             currentProfile = new UserProfile(profileName);
             SaveProfile();
         }
+    }
+
+    public List<string> GetAvailableProfiles()
+    {
+        List<string> profileNames = new List<string>();
+
+        // Check if the directory even exists yet
+        if (Directory.Exists(saveDirectory))
+        {
+            // Get all files in the folder that end in .json
+            string[] filePaths = Directory.GetFiles(saveDirectory, "*.json");
+
+            foreach (string path in filePaths)
+            {
+                // Strip away the folder path and the .json extension to just get the name
+                string fileName = Path.GetFileNameWithoutExtension(path);
+                profileNames.Add(fileName);
+            }
+        }
+
+        return profileNames;
     }
 }

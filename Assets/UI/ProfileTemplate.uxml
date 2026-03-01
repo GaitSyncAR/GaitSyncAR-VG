@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ui:UXML
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ui="UnityEngine.UIElements"
+    xmlns:uie="UnityEditor.UIElements"
+    xsi:noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd"
+>
+
+    <ui:Button text="Saved Template" name="SavedTemplateBtn" style="position: relative; top: 1%; left: 5%; width: 90%; height: 100px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); background-color: rgba(0, 0, 0, 0.23); border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; font-size: 30%; color: rgb(255, 255, 255); -unity-font-style: bold; border-top-width: 3px; border-right-width: 3px; border-bottom-width: 3px; border-left-width: 3px; flex-direction: column; flex-wrap: nowrap; justify-content: flex-start; align-self: auto;" />
+</ui:UXML>
