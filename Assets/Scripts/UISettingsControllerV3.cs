@@ -244,6 +244,9 @@ public class UISettingsControllerV3 : MonoBehaviour
         // Safety floor (cannot go below 0)
         if (metronomeArm.bpm < 0) metronomeArm.bpm = 0;
 
+        // Adding new value to current profile for saving
+        ProfileManager.Instance.currentProfile.bpm = metronomeArm.bpm;
+
         UpdateBPMDisplay();
         PlayHaptic();
     }
