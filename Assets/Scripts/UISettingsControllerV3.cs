@@ -28,6 +28,9 @@ public class UISettingsControllerV3 : MonoBehaviour
     private VisualElement calibrationPage;
     private Label bpmLabel;
     private Button startStopBtn;
+    private List<VisualElement> _allPages = new List<VisualElement>();
+    private VisualElement _currentPage;
+    private VisualElement templatesPage;
     
     // Calibration Page Containers
     private VisualElement positionControls;
@@ -47,16 +50,19 @@ public class UISettingsControllerV3 : MonoBehaviour
         // 2. Setup Remote (BPM Control)
         SetupRemotePage();
 
-        // 3. Setup Calibration
+        // 3. Setup TemplatesPage
+        SetupTemplatesPage();
+
+        // 4. Setup Calibration
         SetupCalibrationTabs();
         SetupPositionControls();
         SetupShapeControls();
         SetupColorControls();
 
-        // 3. LOAD SAVED SETTINGS
+        // 5. LOAD SAVED SETTINGS
         LoadSettings();
 
-        // Assigning rendered texture safely
+        // 6. Assigning rendered texture safely
         var metronomePreview = calibrationPage.Q<VisualElement>("Metronome");
         if (metronomePreview != null && metronomePreviewTexture != null)
         {
@@ -83,7 +89,7 @@ public class UISettingsControllerV3 : MonoBehaviour
     }
 
     // =========================================================
-    // SAVING & LOADING SYSTEM
+    // CURRENT SAVE & LOADING SYSTEM
     // =========================================================
     private void SaveSettings()
     {
@@ -158,34 +164,58 @@ public class UISettingsControllerV3 : MonoBehaviour
     // =========================================================
     private void SetupNavigation()
     {
+        // locating pages
         remotePage = root.Q<VisualElement>("RemotePage");
         calibrationPage = root.Q<VisualElement>("CalibrationPage");
+        templatesPage = root.Q<VisualElement>("TemplatesPage");
 
+        // adding pages to list for easy management
+        _allPages.Add(remotePage);
+        _allPages.Add(calibrationPage);
+        _allPages.Add(templatesPage);
+
+        // adding button callbacks
         var toSettingsBtn = root.Q<Button>("ToSettings"); // Settings button inside Title
-        var backBtn = root.Q<Button>("BackBtn");
+        var toTemplatesBtn = root.Q<Button>("ToTemplates");
 
-        toSettingsBtn.RegisterCallback<ClickEvent>(e => SwitchPage(true));
-        backBtn.RegisterCallback<ClickEvent>(e => SwitchPage(false));
+        // setting button functionality to switch between pages
+        toSettingsBtn.RegisterCallback<ClickEvent>(e => ShowPage(calibrationPage));
+        toTemplatesBtn.RegisterCallback<ClickEvent>(e => ShowPage(templatesPage));
+
+        // Making all back btns return to the RemotePage (Main Menu)
+        List<Button> backButtons = root.Query<Button>("BackBtn").ToList();
+        foreach (Button btn in backButtons)
+        {
+            btn.RegisterCallback<ClickEvent>(e => ShowPage(remotePage));
+        }
     }
 
-    private void SwitchPage(bool showCalibration)
+    private void ShowPage(VisualElement targetPage)
     {
-        if (showCalibration)
-        {
-            if (remotePage != null) remotePage.style.display = DisplayStyle.None;
-            if (calibrationPage != null) calibrationPage.style.display = DisplayStyle.Flex;
-        }
-        else
+       if (targetPage == null) return;
+
+        // Run your custom logic for leaving a specific page (like your old SaveSettings)
+        if (_currentPage == calibrationPage && targetPage != calibrationPage)
         {
             SaveSettings();
-
-            if (calibrationPage != null) calibrationPage.style.display = DisplayStyle.None;
-            if (remotePage != null) remotePage.style.display = DisplayStyle.Flex;
         }
+
+        // Turning all other pages off, and the target page on
+        foreach (VisualElement page in _allPages)
+        {
+            if (page != null)
+            {
+                // If it's the target page, use Flex. Otherwise, use None.
+                page.style.display = (page == targetPage) ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+        }
+
+        // Update the current page tracker
+        _currentPage = targetPage;
     }
 
     // =========================================================
-    // REMOTE PAGE (BPM LOGIC UPDATED)
+    // REMOTE PAGE
     // =========================================================
     private void SetupRemotePage()
     {
@@ -240,6 +270,14 @@ public class UISettingsControllerV3 : MonoBehaviour
             startStopBtn.style.color = Color.white;
         }
         PlayHaptic();
+    }
+
+    // =========================================================
+    // TEMPLATES PAGE (PLACEHOLDER)
+    // =========================================================
+    private void SetupTemplatesPage()
+    {
+        // This is a placeholder for the Templates page setup.
     }
 
     // =========================================================
