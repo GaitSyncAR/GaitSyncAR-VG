@@ -128,18 +128,8 @@ public class UISettingsControllerV3 : MonoBehaviour
         if (metronomeObject != null)
         {
             metronomeObject.position = profileManagerObj.currentProfile.metronomePosition;
-            metronomeObject.localScale = Vector3.one * profileManagerObj.currentProfile.metronomeUniformScale;
+            metronomeObject.localScale = profileManagerObj.currentProfile.metronomeSize;
         }
-
-        // 3. Load Stretch (Bar & Arm)
-        if (metronomeBar != null)
-        {
-            Vector3 s = metronomeBar.localScale;
-            s.y = profileManagerObj.currentProfile.metronomeBarScaleY;
-            metronomeBar.localScale = s;
-        }
-
-        // load local stretch (disabled)
 
         // load colour
         if (metronomeRenderer != null)
@@ -150,7 +140,19 @@ public class UISettingsControllerV3 : MonoBehaviour
             targetMaterial.SetColor("_EmissionColor", c);
         }
 
-        Debug.Log("Settings Loaded!");
+
+        // 3. Load Stretch (Bar & Arm)
+        /*
+        if (metronomeBar != null)
+        {
+            Vector3 s = metronomeBar.localScale;
+            s.y = profileManagerObj.currentProfile.metronomeBarScaleY;
+            metronomeBar.localScale = s;
+        }
+        */
+
+        // load local stretch (disabled)
+        Debug.Log("Settings Loaded and applied!");
     }
 
     // =========================================================
@@ -360,6 +362,9 @@ public class UISettingsControllerV3 : MonoBehaviour
                 targetMaterial.SetColor("_BaseColor", newColor);
                 targetMaterial.SetColor("_SpecColor", newColor);
                 targetMaterial.SetColor("_EmissionColor", newColor);
+
+                // apply to current profile for saving
+                ProfileManager.Instance.currentProfile.metronomeColour = newColor;
             }
         };
         
@@ -424,6 +429,9 @@ public class UISettingsControllerV3 : MonoBehaviour
             Vector3 newScale = metronomeObject.localScale + (Vector3.one * amount);
             if (newScale.x < 0.1f) newScale = Vector3.one * 0.1f;
             metronomeObject.localScale = newScale;
+
+            // updating current profile value for saving
+            ProfileManager.Instance.currentProfile.metronomeSize = newScale;
         }
         PlayHaptic();
     }
