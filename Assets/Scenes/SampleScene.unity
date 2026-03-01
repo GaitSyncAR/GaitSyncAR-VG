@@ -949,7 +949,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UiScaler
   uiDocument: {fileID: 773190230}
-  referenceResolution: {x: 1920, y: 1080}
+  referenceResolution: {x: 1440, y: 3088}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
