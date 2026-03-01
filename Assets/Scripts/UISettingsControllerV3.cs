@@ -391,6 +391,10 @@ public class UISettingsControllerV3 : MonoBehaviour
     private void MoveObject(Vector3 delta)
     {
         if (metronomeObject != null) metronomeObject.position += delta;
+
+        // updating current profile value for saving
+        ProfileManager.Instance.currentProfile.metronomePosition = metronomeObject.position;
+
         PlayHaptic();
     }
 
