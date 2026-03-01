@@ -42,6 +42,7 @@ public class UISettingsControllerV3 : MonoBehaviour
         if (!Application.isPlaying) return;
         if (uiDocument == null) return;
 
+        // Fetching the root element of the UI document
         root = uiDocument.rootVisualElement;
 
         // 1. Setup Navigation
@@ -93,68 +94,61 @@ public class UISettingsControllerV3 : MonoBehaviour
     // =========================================================
     private void SaveSettings()
     {
-        // 1. Save BPM
-        if (metronomeArm != null)
-            PlayerPrefs.SetFloat("Meta_BPM", metronomeArm.bpm);
-
-        // 2. Save Position (Parent)
-        if (metronomeObject != null)
-        {
-            PlayerPrefs.SetFloat("Meta_PosX", metronomeObject.position.x);
-            PlayerPrefs.SetFloat("Meta_PosY", metronomeObject.position.y);
-            PlayerPrefs.SetFloat("Meta_PosZ", metronomeObject.position.z);
-            
-            // Save Uniform Scale (Parent)
-            PlayerPrefs.SetFloat("Meta_ScaleUnif", metronomeObject.localScale.x);
-        }
-
-        // 3. Save Stretch (Bar & Arm)
-        if (metronomeBar != null)
-            PlayerPrefs.SetFloat("Meta_BarScaleY", metronomeBar.localScale.y);
-        
-        if (metronomeArmVisuals != null)
-            PlayerPrefs.SetFloat("Meta_ArmScaleY", metronomeArmVisuals.localScale.y);
-
-        PlayerPrefs.Save(); // Write to disk
+        PlayerPrefs.SetString("CurrentProfile", ProfileManager.Instance.currentProfile.profileName); 
+        ProfileManager.Instance.SaveProfile();
+        PlayerPrefs.Save();
         Debug.Log("Settings Saved!");
     }
 
     private void LoadSettings()
-    {
-        // 1. Load BPM
-        if (metronomeArm!= null && PlayerPrefs.HasKey("Meta_BPM"))
+    {  
+        ProfileManager profileManagerObj = ProfileManager.Instance;
+
+        // check if we have a profile saved, if not create default
+        if (PlayerPrefs.HasKey("CurrentProfile"))
         {
-            metronomeArm.bpm = PlayerPrefs.GetFloat("Meta_BPM");
+            string profileName = PlayerPrefs.GetString("CurrentProfile");
+            profileManagerObj.LoadProfile(profileName);
+        }
+        else
+        {
+            profileManagerObj.currentProfile = new UserProfile("Default");
+            profileManagerObj.SaveProfile();
+            SaveSettings(); // Saving the default profile immediately to ensure we have a file for future loads
+        }
+
+        // 1. Loading Beats Per Minute (BPM)
+        if (metronomeArm!= null)
+        {
+            metronomeArm.bpm = profileManagerObj.currentProfile.bpm;
             UpdateBPMDisplay();
         }
 
-        // 2. Load Position
-        if (metronomeObject != null && PlayerPrefs.HasKey("Meta_PosX"))
+        // 2. Loading Metronome Position & Uniform Scal
+        if (metronomeObject != null)
         {
-            Vector3 pos;
-            pos.x = PlayerPrefs.GetFloat("Meta_PosX");
-            pos.y = PlayerPrefs.GetFloat("Meta_PosY");
-            pos.z = PlayerPrefs.GetFloat("Meta_PosZ");
-            metronomeObject.position = pos;
-
-            // Load Uniform Scale
-            if (PlayerPrefs.HasKey("Meta_ScaleUnif"))
-            {
-                float s = PlayerPrefs.GetFloat("Meta_ScaleUnif");
-                metronomeObject.localScale = Vector3.one * s;
-            }
+            metronomeObject.position = profileManagerObj.currentProfile.metronomePosition;
+            metronomeObject.localScale = Vector3.one * profileManagerObj.currentProfile.metronomeUniformScale;
         }
 
         // 3. Load Stretch (Bar & Arm)
-        if (metronomeBar != null && PlayerPrefs.HasKey("Meta_BarScaleY"))
+        if (metronomeBar != null)
         {
             Vector3 s = metronomeBar.localScale;
-            s.y = PlayerPrefs.GetFloat("Meta_BarScaleY");
+            s.y = profileManagerObj.currentProfile.metronomeBarScaleY;
             metronomeBar.localScale = s;
         }
 
         // load local stretch (disabled)
-        // load colour, disabled for now
+
+        // load colour
+        if (metronomeRenderer != null)
+        {
+            Color c = profileManagerObj.currentProfile.metronomeColour;
+            targetMaterial.SetColor("_BaseColor", c);
+            targetMaterial.SetColor("_SpecColor", c);
+            targetMaterial.SetColor("_EmissionColor", c);
+        }
 
         Debug.Log("Settings Loaded!");
     }
@@ -278,6 +272,7 @@ public class UISettingsControllerV3 : MonoBehaviour
     private void SetupTemplatesPage()
     {
         // This is a placeholder for the Templates page setup.
+
     }
 
     // =========================================================

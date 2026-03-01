@@ -1,17 +1,31 @@
 using UnityEngine;
 using System.IO;
 
-public class ProfileManager : MonoBehaviour
+public class ProfileManager 
 {
+    // Singleton Instance
+    private static ProfileManager _instance;
+    public static ProfileManager Instance
+    {
+        get
+        {
+            // If the manager doesn't exist yet, create it.
+            if (_instance == null)
+            {
+                _instance = new ProfileManager();
+            }
+            return _instance;
+        }
+    }
+
     public UserProfile currentProfile;
     private string saveDirectory;
 
-    void Awake()
+    // Constructor
+    private ProfileManager()
     {
-        // Set the path to the device's persistent data folder
         saveDirectory = Application.persistentDataPath + "/Profiles/";
         
-        // Ensuring the directory exists
         if (!Directory.Exists(saveDirectory))
         {
             Directory.CreateDirectory(saveDirectory);
@@ -22,13 +36,8 @@ public class ProfileManager : MonoBehaviour
     {
         if (currentProfile == null) return;
 
-        // Convert the C# object into a JSON string
         string json = JsonUtility.ToJson(currentProfile, true); 
-
-        // Create a unique file path based on the profile name
         string filePath = saveDirectory + currentProfile.profileName + ".json";
-
-        // Write the text to the file
         File.WriteAllText(filePath, json);
         Debug.Log("Profile saved to: " + filePath);
     }
@@ -40,12 +49,8 @@ public class ProfileManager : MonoBehaviour
         if (File.Exists(filePath))
         {
             string json = File.ReadAllText(filePath);
-            
-            // Convert the JSON string back into the C# object
             currentProfile = JsonUtility.FromJson<UserProfile>(json);
             Debug.Log("Loaded profile: " + profileName);
-            
-            // Applying settings throughout my application
         }
         else
         {
