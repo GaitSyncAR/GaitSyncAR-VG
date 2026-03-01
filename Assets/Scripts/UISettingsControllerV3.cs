@@ -138,6 +138,14 @@ public class UISettingsControllerV3 : MonoBehaviour
             targetMaterial.SetColor("_BaseColor", c);
             targetMaterial.SetColor("_SpecColor", c);
             targetMaterial.SetColor("_EmissionColor", c);
+
+            // setting UI sliders to match loaded color
+            var rSlider = colourControls.Q("Red_Slider").Q<SliderInt>();
+            var gSlider = colourControls.Q("Green_Slider").Q<SliderInt>();
+            var bSlider = colourControls.Q("Blue_Slider").Q<SliderInt>();
+            rSlider.value = (int)(c.r * 255);
+            gSlider.value = (int)(c.g * 255);
+            bSlider.value = (int)(c.b * 255);
         }
 
 
