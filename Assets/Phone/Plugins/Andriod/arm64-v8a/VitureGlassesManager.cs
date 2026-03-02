@@ -1,13 +1,13 @@
 using System;
+using System.Collections;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
 public class VitureManager : MonoBehaviour
 {
-    // Replace with the exact name of your compiled .so file (without "lib" or ".so")
     private const string DLL_NAME = "glasses";
 
-    // Lifecycle Imports ---
+    // --- Lifecycle Imports ---
     [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr xr_device_provider_create(int product_id, int file_descriptor);
 
@@ -26,51 +26,235 @@ public class VitureManager : MonoBehaviour
     [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
     private static extern void xr_device_provider_destroy(IntPtr handle);
 
-    // Device Control Imports ---
+    // --- Device Control Imports ---
     [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
     private static extern int xr_device_provider_get_duty_cycle(IntPtr handle);
 
+    // --- Utility Import ---
+    [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+    private static extern bool xr_device_provider_is_product_id_valid(int product_id);
+
+    // imports for rotation
+    [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int xr_device_provider_get_gl_pose_carina(IntPtr handle, float[] pose, double predict_time, IntPtr pose_status);
+
+    public Transform targetCamera; // Main Camera
+    private float[] poseArray = new float[7]; // [px, py, pz, qw, qx, qy, qz]
+
     private IntPtr deviceHandle = IntPtr.Zero;
+    private AndroidJavaObject usbConnection; // Keep this alive so the file descriptor doesn't close!
 
     void Start()
     {
-        // On Android, must use Android's Java UsbManager to get these values
-        // These are placeholder values.
-        int productId = 0; 
-        int fileDescriptor = 0; 
+        Debug.LogWarning("[VITURE] THE SCRIPT IS ALIVE AND RUNNING!");
 
-        // 1. Create
+        if (Application.platform != RuntimePlatform.Android)
+        {
+            Debug.LogError("[VITURE] This script must run on an Android device.");
+            return;
+        }
+
+        ConnectAndStart();
+    }
+
+    private void RequestUsbPermission(AndroidJavaObject usbManager, AndroidJavaObject usbDevice, AndroidJavaObject currentActivity)
+    {
+        try
+        {
+            string ACTION_USB_PERMISSION = "com.viture.usb.PERMISSION";
+            
+            // Creating the Intent
+            using (AndroidJavaObject intent = new AndroidJavaObject("android.content.Intent", ACTION_USB_PERMISSION))
+            {
+                // Explicit request
+                string packageName = currentActivity.Call<string>("getPackageName");
+                intent.Call<AndroidJavaObject>("setPackage", packageName);
+
+                // 2. Creating the PendingIntent with FLAG_MUTABLE (33554432)
+                int flags = 33554432; 
+                
+                using (AndroidJavaClass pendingIntentClass = new AndroidJavaClass("android.app.PendingIntent"))
+                {
+                    using (AndroidJavaObject pendingIntent = pendingIntentClass.CallStatic<AndroidJavaObject>(
+                        "getBroadcast", 
+                        currentActivity, 
+                        0, 
+                        intent, 
+                        flags))
+                    {
+                        // 3. Trigger the actual system popup
+                        usbManager.Call("requestPermission", usbDevice, pendingIntent);
+                        Debug.LogWarning("[VITURE] Permission dialog triggered! Check your phone screen.");
+                    }
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("[VITURE] Failed to request USB permission: " + e.Message);
+        }
+    }
+
+    private void ConnectAndStart()
+    {
+        Debug.LogWarning("[VITURE] Starting USB Discovery...");
+        
+        using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+        using (AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+        using (AndroidJavaObject usbManager = currentActivity.Call<AndroidJavaObject>("getSystemService", "usb"))
+        using (AndroidJavaObject deviceList = usbManager.Call<AndroidJavaObject>("getDeviceList"))
+        using (AndroidJavaObject values = deviceList.Call<AndroidJavaObject>("values"))
+        using (AndroidJavaObject iterator = values.Call<AndroidJavaObject>("iterator"))
+        {
+            if (!iterator.Call<bool>("hasNext"))
+            {
+                Debug.LogError("[VITURE] No USB devices detected at all. Is the OTG/USB host enabled on your phone?");
+            }
+
+            while (iterator.Call<bool>("hasNext"))
+            {
+                using (AndroidJavaObject usbDevice = iterator.Call<AndroidJavaObject>("next"))
+                {
+                    int productId = usbDevice.Call<int>("getProductId");
+                    Debug.LogWarning($"[VITURE] Checking Device: ProductID {productId}");
+
+                    if (xr_device_provider_is_product_id_valid(productId))
+                    {
+                        Debug.LogWarning("[VITURE] VITURE Glasses detected! Requesting permission...");
+
+                        if (usbManager.Call<bool>("hasPermission", usbDevice))
+                        {
+                            OpenAndInitialize(usbManager, usbDevice, productId);
+                        }
+                        else
+                        {
+                            // This is likely where you are stuck!
+                            Debug.LogError("[VITURE] PERMISSION DENIED by Android. You need a Permission Intent.");
+                            RequestUsbPermission(usbManager, usbDevice, currentActivity);
+                        }
+                        return; 
+                    }
+                }
+            }
+        }
+    }
+
+    private void OpenAndInitialize(AndroidJavaObject usbManager, AndroidJavaObject usbDevice, int productId)
+    {
+        usbConnection = usbManager.Call<AndroidJavaObject>("openDevice", usbDevice);
+        if (usbConnection != null)
+        {
+            int fd = usbConnection.Call<int>("getFileDescriptor");
+            Debug.LogWarning($"[VITURE] Connection Success! FD: {fd}. Calling Create...");
+            
+            deviceHandle = xr_device_provider_create(productId, fd);
+            if (deviceHandle != IntPtr.Zero)
+            {
+                int res = xr_device_provider_initialize(deviceHandle, null, null);
+                Debug.LogWarning($"[VITURE] Init Result: {res}");
+                if (res == 0)
+                {
+                    xr_device_provider_start(deviceHandle);
+                    StartCoroutine(LogHardwareInfoRoutine());
+                }
+            }
+        }
+        else
+        {
+            Debug.LogError("[VITURE] Failed to openDevice even with permission.");
+        }
+    }
+
+    private void InitializeSDK(int productId, int fileDescriptor)
+    {
         deviceHandle = xr_device_provider_create(productId, fileDescriptor);
         
         if (deviceHandle != IntPtr.Zero)
         {
-            // 2. Initialize
+            // Init
             int initResult = xr_device_provider_initialize(deviceHandle, null, null);
-            if (initResult == 0) // 0 is Success
+            if (initResult == 0) 
             {
-                // 3. Start
+                // Start
                 xr_device_provider_start(deviceHandle);
+                Debug.Log("[VITURE] SDK Started successfully! Starting data loop...");
                 
-                // 4. Read Duty Cycle
-                int dutyCycle = xr_device_provider_get_duty_cycle(deviceHandle);
-                Debug.Log("Current Duty Cycle: " + dutyCycle);
+                // Start Loop
+                StartCoroutine(LogHardwareInfoRoutine());
             }
             else
             {
-                Debug.LogError("Initialization failed with code: " + initResult);
+                Debug.LogError($"[VITURE] Initialization failed: {initResult}");
             }
+        }
+    }
+
+    /*
+    private IEnumerator LogHardwareInfoRoutine()
+    {
+        while (true)
+        {
+            if (deviceHandle != IntPtr.Zero)
+            {
+                int dutyCycle = xr_device_provider_get_duty_cycle(deviceHandle);
+                Debug.Log($"[VITURE] Current Duty Cycle: {dutyCycle}");
+            }
+            yield return new WaitForSeconds(2f);
+        }
+    }
+    */
+
+    private IEnumerator LogHardwareInfoRoutine()
+    {
+        while (true)
+        {
+            if (deviceHandle != IntPtr.Zero)
+            {
+                // 1. Get the 3DOF Pose from the glasses
+                // predict_time = 0 for the most immediate data
+                int result = xr_device_provider_get_gl_pose_carina(deviceHandle, poseArray, 0, IntPtr.Zero);
+
+                if (result == 0 && targetCamera != null)
+                {
+                    // The SDK returns: [pos_x, pos_y, pos_z, quat_w, quat_x, quat_y, quat_z]
+                    // Note: The coordinate system is OpenGL (Right-Handed)
+                    Quaternion rawRot = new Quaternion(poseArray[4], poseArray[5], poseArray[6], poseArray[3]);
+                    
+                    // Convert to Unity (Left-Handed) coordinate system
+                    // Usually involves flipping the Z and W or similar depending on mount orientation
+                    rawRot = new Quaternion(-rawRot.x, -rawRot.y, rawRot.z, rawRot.w);
+
+                    targetCamera.localRotation = rawRot;
+                }
+
+                // 2. Keep logging the hardware status
+                int dutyCycle = xr_device_provider_get_duty_cycle(deviceHandle);
+                Debug.Log($"[VITURE] Pose Success: {result} | Duty: {dutyCycle}");
+            }
+            
+            // Let's run this every frame for smooth tracking instead of every 2 seconds
+            yield return null; 
         }
     }
 
     void OnDestroy()
     {
-        // 5. Cleanup
+        StopAllCoroutines();
+
         if (deviceHandle != IntPtr.Zero)
         {
             xr_device_provider_stop(deviceHandle);
             xr_device_provider_shutdown(deviceHandle);
             xr_device_provider_destroy(deviceHandle);
             deviceHandle = IntPtr.Zero;
+        }
+
+        // Cleaning up the Java USB connection
+        if (usbConnection != null)
+        {
+            usbConnection.Call("close");
+            usbConnection.Dispose();
+            usbConnection = null;
         }
     }
 }
