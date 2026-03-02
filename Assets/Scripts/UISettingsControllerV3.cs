@@ -25,6 +25,9 @@ public class UISettingsControllerV3 : MonoBehaviour
     [Tooltip("UXML Template for profile rows in the Templates Page")]
     public VisualTreeAsset profileRowTemplate;
 
+    [Tooltip("Popup template for confirmation dialogs (e.g., deleting profiles)")]
+    public VisualTreeAsset popupTemplate;
+
     // --- PRIVATE UI REFERENCES ---
     private VisualElement root;
     private VisualElement remotePage;
@@ -40,6 +43,13 @@ public class UISettingsControllerV3 : MonoBehaviour
     private VisualElement shapeControls;
     private VisualElement colourControls;
 
+    // other private fields
+    private string _selectedTemplateName = "";
+
+    // Singletons
+    private PopupManager popupManager;
+    private ProfileManager profileManager;
+
     void Start()
     {
         if (!Application.isPlaying) return;
@@ -47,6 +57,12 @@ public class UISettingsControllerV3 : MonoBehaviour
 
         // Fetching the root element of the UI document
         root = uiDocument.rootVisualElement;
+
+        // Initializing PopupManager with necessary references
+        popupManager = PopupManager.Instance;
+        popupManager.Initialize(uiDocument, popupTemplate);
+        // Fetching the ProfileManager instance
+        profileManager = ProfileManager.Instance;
 
         // 1. Setup Navigation
         SetupNavigation();
@@ -97,47 +113,45 @@ public class UISettingsControllerV3 : MonoBehaviour
     // =========================================================
     private void SaveSettings()
     {
-        PlayerPrefs.SetString("CurrentProfile", ProfileManager.Instance.currentProfile.profileName); 
-        ProfileManager.Instance.SaveProfile();
+        PlayerPrefs.SetString("CurrentProfile", profileManager.currentProfile.profileName); 
+        profileManager.SaveProfile();
         PlayerPrefs.Save();
         Debug.Log("Settings Saved!");
     }
 
     private void LoadSettings()
     {  
-        ProfileManager profileManagerObj = ProfileManager.Instance;
-
         // check if we have a profile saved, if not create default
         if (PlayerPrefs.HasKey("CurrentProfile"))
         {
             string profileName = PlayerPrefs.GetString("CurrentProfile");
-            profileManagerObj.LoadProfile(profileName);
+            profileManager.LoadProfile(profileName);
         }
         else
         {
-            profileManagerObj.currentProfile = new UserProfile("Default");
-            profileManagerObj.SaveProfile();
+            profileManager.currentProfile = new UserProfile("Default");
+            profileManager.SaveProfile();
             SaveSettings(); // Saving the default profile immediately to ensure we have a file for future loads
         }
 
         // 1. Loading Beats Per Minute (BPM)
         if (metronomeArm!= null)
         {
-            metronomeArm.bpm = profileManagerObj.currentProfile.bpm;
+            metronomeArm.bpm = profileManager.currentProfile.bpm;
             UpdateBPMDisplay();
         }
 
         // 2. Loading Metronome Position & Uniform Scal
         if (metronomeObject != null)
         {
-            metronomeObject.position = profileManagerObj.currentProfile.metronomePosition;
-            metronomeObject.localScale = profileManagerObj.currentProfile.metronomeSize;
+            metronomeObject.position = profileManager.currentProfile.metronomePosition;
+            metronomeObject.localScale = profileManager.currentProfile.metronomeSize;
         }
 
         // load colour
         if (metronomeRenderer != null)
         {
-            Color c = profileManagerObj.currentProfile.metronomeColour;
+            Color c = profileManager.currentProfile.metronomeColour;
             targetMaterial.SetColor("_BaseColor", c);
             targetMaterial.SetColor("_SpecColor", c);
             targetMaterial.SetColor("_EmissionColor", c);
@@ -157,7 +171,7 @@ public class UISettingsControllerV3 : MonoBehaviour
         if (metronomeBar != null)
         {
             Vector3 s = metronomeBar.localScale;
-            s.y = profileManagerObj.currentProfile.metronomeBarScaleY;
+            s.y = profileManager.currentProfile.metronomeBarScaleY;
             metronomeBar.localScale = s;
         }
         */
@@ -248,7 +262,7 @@ public class UISettingsControllerV3 : MonoBehaviour
         if (metronomeArm.bpm < 0) metronomeArm.bpm = 0;
 
         // Adding new value to current profile for saving
-        ProfileManager.Instance.currentProfile.bpm = metronomeArm.bpm;
+        profileManager.currentProfile.bpm = metronomeArm.bpm;
 
         UpdateBPMDisplay();
         PlayHaptic();
@@ -290,6 +304,21 @@ public class UISettingsControllerV3 : MonoBehaviour
     private void SetupTemplatesPage()
     {
         profileScrollView = root.Q<ScrollView>("ScrollView"); 
+
+        // Querying all the buttons on the Templates Page
+        Button saveCurrentSettingsBtn = root.Q<Button>("SaveCurrentSettingsBtn");
+        Button applySettingsBtn = root.Q<Button>("ApplySettingsBtn");
+        Button renameBtn = root.Q<Button>("RenameBtn");
+        Button resetBtn = root.Q<Button>("ResetBtn");
+        Button deleteBtn = root.Q<Button>("DeleteBtn");
+
+        // Hook up button functionality
+        saveCurrentSettingsBtn.clicked += OnSaveCurrentSettingsClicked;
+        applySettingsBtn.clicked += ApplySelectedTemplate;
+        renameBtn.clicked += OnRenameClicked;
+        resetBtn.clicked += OnResetToDefaultClicked;
+        deleteBtn.clicked += OnDeleteClicked;
+
         PopulateProfileList();
     }
 
@@ -297,11 +326,11 @@ public class UISettingsControllerV3 : MonoBehaviour
     {
         if (profileScrollView == null) return;
 
-        // Clearing out the dummy template
+        // Clearing out old entries before repopulating
         profileScrollView.Clear();
 
         // fertching and looping over saved profiles to populate UI
-        List<string> savedProfiles = ProfileManager.Instance.GetAvailableProfiles();
+        List<string> savedProfiles = profileManager.GetAvailableProfiles();
         foreach (string profileName in savedProfiles)
         {
             VisualElement newRow = profileRowTemplate.Instantiate();
@@ -317,6 +346,127 @@ public class UISettingsControllerV3 : MonoBehaviour
         }
 
         Debug.Log($"Loaded {savedProfiles.Count} profiles into the UI.");
+    }
+
+    private void SelectTemplate(string templateName)
+    {
+        _selectedTemplateName = templateName;
+        
+        Label selectedTitle = root.Q<Label>("SelectedTitle");
+        if (selectedTitle != null)
+        {
+            selectedTitle.text = $"Selected Template: {templateName}";
+        }
+
+        PlayHaptic();
+    }
+
+    private void OnDeleteClicked()
+    {
+        if (string.IsNullOrEmpty(_selectedTemplateName)) return;
+
+        popupManager.ShowPopup(
+            titleText: $"Delete '{_selectedTemplateName}'?",
+            actionText: "Delete",
+            onCancel: () => { Debug.Log("Deletion cancelled."); PlayHaptic(); },
+            onAction: (input) => 
+            {
+                profileManager.DeleteProfile(_selectedTemplateName);
+                PopulateProfileList();
+                SelectTemplate(""); // Clear selection after deletion
+                PlayHaptic();
+            },
+            useInputField: false
+        );
+    }
+
+    public void OnResetToDefaultClicked()
+    {
+        popupManager.ShowPopup(
+            titleText: $"Reset Current Template Settings to Default?",
+            actionText: "Reset",
+            onCancel: () => { Debug.Log("Reset cancelled."); PlayHaptic(); },
+            onAction: (input) => 
+            {
+                // reseting current profile to default values but keeping same profile name
+                var oldName = profileManager.currentProfile.profileName;
+                profileManager.currentProfile = new UserProfile(oldName);
+                SaveSettings();
+                LoadSettings();
+                PopulateProfileList();
+                PlayHaptic();
+            },
+            useInputField: false
+        );
+    }
+
+    private void ApplySelectedTemplate()
+    {
+        if (string.IsNullOrEmpty(_selectedTemplateName)) return;
+
+        // check if we aren't applying the currently loaded profile (no need to re-apply the same settings)
+        if (PlayerPrefs.GetString("CurrentProfile") == _selectedTemplateName)
+        {
+            Debug.Log("Selected template is already the current profile. No changes applied.");
+            return;
+        }
+
+        // save old settings before applying new ones
+        SaveSettings();
+
+        // Load the profile and apply it
+        PlayerPrefs.SetString("CurrentProfile", _selectedTemplateName);
+        profileManager.LoadProfile(_selectedTemplateName);
+        LoadSettings(); // Apply the loaded settings to the UI and metronome
+        SaveSettings(); // Save the applied profile as the current settings
+
+        PlayHaptic();
+    }
+
+    // ================ POPUPS ==================================
+    private void OnSaveCurrentSettingsClicked()
+    {
+        // Use the PopupManager to spawn our default popup
+        popupManager.ShowPopup(
+            titleText: "Save New Template",
+            actionText: "Save",
+            onCancel: () => 
+            {
+                Debug.Log("Save cancelled by user.");
+                PlayHaptic();
+            },
+            onAction: (inputName) => 
+            {
+                if (string.IsNullOrEmpty(inputName)) return; // Prevent empty names
+
+                // Logic to save as a new profile
+                profileManager.currentProfile.profileName = inputName;
+                SaveSettings(); 
+                PopulateProfileList(); // Refresh the UI list
+                PlayHaptic();
+            }
+        );
+        print("Save Current Settings button clicked, popup should be displayed.");
+    }
+
+    private void OnRenameClicked()
+    {
+        if (string.IsNullOrEmpty(_selectedTemplateName)) return;
+
+        popupManager.ShowPopup(
+            titleText: $"Rename '{_selectedTemplateName}'",
+            actionText: "Rename",
+            onCancel: () => { Debug.Log("Rename cancelled."); PlayHaptic(); },
+            onAction: (newName) => 
+            {
+                if (string.IsNullOrEmpty(newName)) return;
+                
+                Debug.Log($"Renaming {_selectedTemplateName} to {newName}");
+                profileManager.RenameProfile(_selectedTemplateName, newName);
+                
+                PopulateProfileList();
+            }
+        );
     }
 
     // =========================================================
@@ -406,7 +556,7 @@ public class UISettingsControllerV3 : MonoBehaviour
                 targetMaterial.SetColor("_EmissionColor", newColor);
 
                 // apply to current profile for saving
-                ProfileManager.Instance.currentProfile.metronomeColour = newColor;
+                profileManager.currentProfile.metronomeColour = newColor;
             }
         };
         
@@ -424,7 +574,7 @@ public class UISettingsControllerV3 : MonoBehaviour
         if (metronomeObject != null) metronomeObject.position += delta;
 
         // updating current profile value for saving
-        ProfileManager.Instance.currentProfile.metronomePosition = metronomeObject.position;
+        profileManager.currentProfile.metronomePosition = metronomeObject.position;
 
         PlayHaptic();
     }
@@ -477,7 +627,7 @@ public class UISettingsControllerV3 : MonoBehaviour
             metronomeObject.localScale = newScale;
 
             // updating current profile value for saving
-            ProfileManager.Instance.currentProfile.metronomeSize = newScale;
+            profileManager.currentProfile.metronomeSize = newScale;
         }
         PlayHaptic();
     }

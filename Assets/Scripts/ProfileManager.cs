@@ -20,32 +20,42 @@ public class ProfileManager
     }
 
     public UserProfile currentProfile;
-    private string saveDirectory;
+    private string _saveDirectory;
 
-    // Constructor
-    private ProfileManager()
+    private string SaveDirectory
     {
-        saveDirectory = Application.persistentDataPath + "/Profiles/";
-        
-        if (!Directory.Exists(saveDirectory))
+        get
         {
-            Directory.CreateDirectory(saveDirectory);
+            // If we haven't fetched the path yet, get it and create the folder
+            if (string.IsNullOrEmpty(_saveDirectory))
+            {
+                _saveDirectory = Application.persistentDataPath + "/Profiles/";
+                
+                if (!Directory.Exists(_saveDirectory))
+                {
+                    Directory.CreateDirectory(_saveDirectory);
+                }
+            }
+            return _saveDirectory;
         }
     }
+
+    // Constructor
+    private ProfileManager() {}
 
     public void SaveProfile()
     {
         if (currentProfile == null) return;
 
         string json = JsonUtility.ToJson(currentProfile, true); 
-        string filePath = saveDirectory + currentProfile.profileName + ".json";
+        string filePath = _saveDirectory + currentProfile.profileName + ".json";
         File.WriteAllText(filePath, json);
         Debug.Log("Profile saved to: " + filePath);
     }
 
     public void LoadProfile(string profileName)
     {
-        string filePath = saveDirectory + profileName + ".json";
+        string filePath = _saveDirectory + profileName + ".json";
 
         if (File.Exists(filePath))
         {
@@ -66,10 +76,10 @@ public class ProfileManager
         List<string> profileNames = new List<string>();
 
         // Check if the directory even exists yet
-        if (Directory.Exists(saveDirectory))
+        if (Directory.Exists(_saveDirectory))
         {
             // Get all files in the folder that end in .json
-            string[] filePaths = Directory.GetFiles(saveDirectory, "*.json");
+            string[] filePaths = Directory.GetFiles(_saveDirectory, "*.json");
 
             foreach (string path in filePaths)
             {
@@ -80,5 +90,55 @@ public class ProfileManager
         }
 
         return profileNames;
+    }
+
+    public void DeleteProfile(string profileName)
+    {
+        string filePath = _saveDirectory + profileName + ".json";
+
+        // ensure we are not deleting the currently loaded profile
+        if (currentProfile != null && currentProfile.profileName == profileName)
+        {
+            Debug.LogWarning("Cannot delete the currently loaded profile: " + profileName);
+            return;
+        }
+
+        if (File.Exists(filePath))
+        {
+            File.Delete(filePath);
+            Debug.Log("Deleted profile: " + profileName);
+        }
+        else
+        {
+            Debug.LogWarning("Profile not found: " + profileName);
+        }
+    }
+
+    public void RenameProfile(string oldName, string newName)
+    {
+        string oldFilePath = _saveDirectory + oldName + ".json";
+        string newFilePath = _saveDirectory + newName + ".json";
+
+        if (File.Exists(oldFilePath))
+        {
+            if (File.Exists(newFilePath))
+            {
+                Debug.LogWarning("A profile with the new name already exists: " + newName);
+                return;
+            }
+
+            File.Move(oldFilePath, newFilePath);
+            Debug.Log("Renamed profile from " + oldName + " to " + newName);
+
+            // If the renamed profile is currently loaded, update the currentProfile reference
+            if (currentProfile != null && currentProfile.profileName == oldName)
+            {
+                currentProfile.profileName = newName;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("Profile not found: " + oldName);
+        }
     }
 }

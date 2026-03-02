@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using System.Collections.Generic;
 
 public class UiScaler : MonoBehaviour
 {
@@ -46,11 +47,9 @@ public class UiScaler : MonoBehaviour
         }
     }
 
-    private void OnTextElementResized(GeometryChangedEvent evt)
+    static public void ApplyScaling(TextElement textEl)
     {
-        TextElement textEl = evt.target as TextElement;
-        if (textEl == null) return;
-
+        // Get current dimensions
         float currentHeight = textEl.resolvedStyle.height;
         float currentWidth = textEl.resolvedStyle.width;
         float newFontSize = 0;
@@ -58,13 +57,14 @@ public class UiScaler : MonoBehaviour
         // If Unity hasn't figured out the height yet we abort to avoid NaN issues
         if (float.IsNaN(currentHeight) || currentHeight <= 0) 
         {
+            Debug.LogWarning($"Skipping scaling for '{textEl.name}' because height is not resolved yet.");
             return; 
         }
 
         // check for custom tags, they scale differently
         if (textEl.ClassListContains("giant-scaling"))
         {
-            newFontSize = (Screen.height / referenceResolution.y) * 50f; // 20px at reference resolution, scales with height
+            newFontSize = (Screen.height / 3088f) * 50f; // 20px at reference resolution, scales with height
         }
         else // generic scaling for normal text elements
         {
@@ -89,6 +89,49 @@ public class UiScaler : MonoBehaviour
         {
             textEl.style.fontSize = newFontSize;
         }
+
+        Debug.Log($"Scaled '{textEl.name}' to font size: {newFontSize}");
+    }
+
+    private static void WaitForLayoutReady(GeometryChangedEvent evt)
+    {
+        TextElement textEl = evt.target as TextElement;
+        if (textEl == null) return;
+
+        if (float.IsNaN(textEl.resolvedStyle.height) || textEl.resolvedStyle.height <= 0) 
+        {
+            return; 
+        }
+
+        // Unregistering immediately so this only happens ONCE
+        textEl.UnregisterCallback<GeometryChangedEvent>(WaitForLayoutReady);
+        ApplyScaling(textEl);
+    }
+
+    // Scale temporary elements like popups or settings buttons that might not be present at Start
+    public static void ScaleTextElements(List<TextElement> textElements)
+    {
+        foreach (var textElement in textElements)
+        {
+            // Checking if the height is already resolved
+            if (textElement.resolvedStyle.height > 0 && !float.IsNaN(textElement.resolvedStyle.height))
+            {
+                ApplyScaling(textElement);
+            }
+            else
+            {
+                // If it's not ready, waiting for the geometry to change
+                textElement.RegisterCallback<GeometryChangedEvent>(WaitForLayoutReady);
+            }
+        }
+    }
+
+    private void OnTextElementResized(GeometryChangedEvent evt)
+    {
+        TextElement textEl = evt.target as TextElement;
+        if (textEl == null) return;
+
+        ApplyScaling(textEl);
     }
 
     public void ScaleApplySettings()

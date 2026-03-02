@@ -937,6 +937,7 @@ MonoBehaviour:
   scaleStep: 0.1
   metronomePreviewTexture: {fileID: 8400000, guid: b0281ebb197c54f47a04371b7a65148a, type: 2}
   profileRowTemplate: {fileID: 9197481963319205126, guid: 9c543f45019907d4ba32501e5297abda, type: 3}
+  popupTemplate: {fileID: 9197481963319205126, guid: 988c2aa3fdce8484198c9b01b0e7ac6a, type: 3}
 --- !u!114 &1964602101
 MonoBehaviour:
   m_ObjectHideFlags: 0
