@@ -30,10 +30,11 @@ public class ProfileManager
         if (!Directory.Exists(_saveDirectory))
         {
             Directory.CreateDirectory(_saveDirectory);
-            UISettingsControllerV3 settingsController = UnityEngine.Object.FindFirstObjectByType<UISettingsControllerV3>();
-            settingsController.PopulateProfileList();
             Debug.Log("Created Profiles directory at: " + _saveDirectory);
         }
+
+        UISettingsControllerV3 settingsController = UnityEngine.Object.FindFirstObjectByType<UISettingsControllerV3>();
+        settingsController.PopulateProfileList();
     }
 
     public void SaveProfile()
