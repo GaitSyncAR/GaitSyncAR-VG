@@ -20,32 +20,28 @@ public class ProfileManager
     }
 
     public UserProfile currentProfile;
-    private string _saveDirectory;
+    private string _saveDirectory = "";
 
-    private string SaveDirectory
-    {
-        get
+    // Constructor
+    private ProfileManager() {
+        _saveDirectory = Application.persistentDataPath + "/Profiles/";
+
+        // Ensure the directory exists
+        if (!Directory.Exists(_saveDirectory))
         {
-            // If we haven't fetched the path yet, get it and create the folder
-            if (string.IsNullOrEmpty(_saveDirectory))
-            {
-                _saveDirectory = Application.persistentDataPath + "/Profiles/";
-                
-                if (!Directory.Exists(_saveDirectory))
-                {
-                    Directory.CreateDirectory(_saveDirectory);
-                }
-            }
-            return _saveDirectory;
+            Directory.CreateDirectory(_saveDirectory);
+            UISettingsControllerV3 settingsController = UnityEngine.Object.FindFirstObjectByType<UISettingsControllerV3>();
+            settingsController.PopulateProfileList();
+            Debug.Log("Created Profiles directory at: " + _saveDirectory);
         }
     }
 
-    // Constructor
-    private ProfileManager() {}
-
     public void SaveProfile()
     {
-        if (currentProfile == null) return;
+        if (currentProfile == null) {
+            Debug.LogWarning("No profile loaded to save.");
+            return;
+        }
 
         string json = JsonUtility.ToJson(currentProfile, true); 
         string filePath = _saveDirectory + currentProfile.profileName + ".json";
@@ -66,7 +62,7 @@ public class ProfileManager
         else
         {
             Debug.LogWarning("Profile not found. Creating a new one.");
-            currentProfile = new UserProfile(profileName);
+            currentProfile = new UserProfile("Default Profile");
             SaveProfile();
         }
     }

@@ -21,12 +21,13 @@ public class PopupManager
 
     // Class Fields
     private VisualTreeAsset _defaultPopupTemplate;
+    private VisualTreeAsset _yesNoPopupTemplate;
     private UIDocument _mainUIDocument;
     private VisualElement _currentPopupInstance;
     private bool isInitialized = false;
 
     // Must be called once before using the PopupManager to provide necessary UI Toolkit references.
-    public void Initialize(UIDocument document, VisualTreeAsset popupTemplate)
+    public void Initialize(UIDocument document, VisualTreeAsset popupTemplate, VisualTreeAsset yesNoPopupTemplate)
     {
         if (isInitialized) {
             Debug.LogWarning("PopupManager is already initialized. Reinitialization is not recommended.");
@@ -34,12 +35,13 @@ public class PopupManager
         } else {
             _mainUIDocument = document;
             _defaultPopupTemplate = popupTemplate;
+            _yesNoPopupTemplate = yesNoPopupTemplate;
             isInitialized = true;
         }
     }
 
     // Spawns a popup based on the default template.
-    public void ShowPopup(string titleText, string actionText, Action onCancel, Action<string> onAction, bool useInputField = true)
+    public void ShowPopup(string titleText, string actionText, Action onCancel, Action<string> onAction, bool includeInputField = true)
     {
         if (!isInitialized)
         {
@@ -47,7 +49,7 @@ public class PopupManager
             return;
         }
 
-        if (_defaultPopupTemplate == null || _mainUIDocument == null)
+        if (_defaultPopupTemplate == null || _mainUIDocument == null || _yesNoPopupTemplate == null)
         {
             Debug.LogError("PopupManager is not properly initialized! Ensure both UIDocument and Popup Template are assigned.");
             return;
@@ -58,7 +60,7 @@ public class PopupManager
         Debug.Log("Spawning popup with title: " + titleText);
 
         // Locate template and clone
-        _currentPopupInstance = _defaultPopupTemplate.Instantiate();
+        _currentPopupInstance = includeInputField ? _defaultPopupTemplate.Instantiate() : _yesNoPopupTemplate.Instantiate();
 
         // Moving it over entire screen
         _currentPopupInstance.style.position = Position.Absolute;
@@ -72,21 +74,14 @@ public class PopupManager
         // Fetching elements inside the newly created popup
         Label titleLabel = _currentPopupInstance.Q<Label>("Title");
         TextField inputField = _currentPopupInstance.Q<TextField>();
-        Button actioBtn = _currentPopupInstance.Q<Button>("CreateBtn");
+        Button actioBtn = _currentPopupInstance.Q<Button>("ActionBtn");
         Button cancelBtn = _currentPopupInstance.Q<Button>("CancelBtn");
-
-        // Disable input fields if not needed
-        if (!useInputField)
-        {
-            if (inputField != null)
-            {
-                inputField.style.display = DisplayStyle.None;
-            }
-        }
+        Label actionBtnLabel = actioBtn?.Q<Label>();
+        Label cancelBtnLabel = cancelBtn?.Q<Label>();
 
         // Applying Changes
         if (titleLabel != null) titleLabel.text = titleText;
-        if (actioBtn != null) actioBtn.text = actionText;
+        if (actionBtnLabel != null) actionBtnLabel.text = actionText;
 
         // Injecting Actions and Close Logic
         actioBtn?.RegisterCallback<ClickEvent>(e => 

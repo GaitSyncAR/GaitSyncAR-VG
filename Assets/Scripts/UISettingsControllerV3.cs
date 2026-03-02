@@ -28,6 +28,9 @@ public class UISettingsControllerV3 : MonoBehaviour
     [Tooltip("Popup template for confirmation dialogs (e.g., deleting profiles)")]
     public VisualTreeAsset popupTemplate;
 
+    [Tooltip("Popup template for yes/no confirmation dialogs")]
+    public VisualTreeAsset yesNoPopupTemplate;
+
     // --- PRIVATE UI REFERENCES ---
     private VisualElement root;
     private VisualElement remotePage;
@@ -60,7 +63,7 @@ public class UISettingsControllerV3 : MonoBehaviour
 
         // Initializing PopupManager with necessary references
         popupManager = PopupManager.Instance;
-        popupManager.Initialize(uiDocument, popupTemplate);
+        popupManager.Initialize(uiDocument, popupTemplate, yesNoPopupTemplate);
         // Fetching the ProfileManager instance
         profileManager = ProfileManager.Instance;
 
@@ -342,6 +345,9 @@ public class UISettingsControllerV3 : MonoBehaviour
                 rowButton.text = profileName;
             }
 
+            // Adding functionality on click
+            rowButton.clicked += () => SelectTemplate(profileName);
+
             profileScrollView.Add(newRow);
         }
 
@@ -376,7 +382,7 @@ public class UISettingsControllerV3 : MonoBehaviour
                 SelectTemplate(""); // Clear selection after deletion
                 PlayHaptic();
             },
-            useInputField: false
+            includeInputField: false
         );
     }
 
@@ -396,7 +402,7 @@ public class UISettingsControllerV3 : MonoBehaviour
                 PopulateProfileList();
                 PlayHaptic();
             },
-            useInputField: false
+            includeInputField: false
         );
     }
 
@@ -411,16 +417,25 @@ public class UISettingsControllerV3 : MonoBehaviour
             return;
         }
 
-        // save old settings before applying new ones
-        SaveSettings();
+         popupManager.ShowPopup(
+            titleText: $"Apply '{_selectedTemplateName}' Settings?",
+            actionText: "Apply",
+            onCancel: () => { Debug.Log("Apply cancelled."); PlayHaptic(); },
+            onAction: (input) => 
+            {
+                // save old settings before applying new ones
+                SaveSettings();
 
-        // Load the profile and apply it
-        PlayerPrefs.SetString("CurrentProfile", _selectedTemplateName);
-        profileManager.LoadProfile(_selectedTemplateName);
-        LoadSettings(); // Apply the loaded settings to the UI and metronome
-        SaveSettings(); // Save the applied profile as the current settings
+                // Load the profile and apply it
+                PlayerPrefs.SetString("CurrentProfile", _selectedTemplateName);
+                profileManager.LoadProfile(_selectedTemplateName);
+                LoadSettings(); // Apply the loaded settings to the UI and metronome
+                SaveSettings(); // Save the applied profile as the current settings
 
-        PlayHaptic();
+                PlayHaptic();
+            },
+            includeInputField: false
+        );
     }
 
     // ================ POPUPS ==================================
@@ -444,6 +459,7 @@ public class UISettingsControllerV3 : MonoBehaviour
                 SaveSettings(); 
                 PopulateProfileList(); // Refresh the UI list
                 PlayHaptic();
+                print($"New template '{inputName}' saved and applied.");
             }
         );
         print("Save Current Settings button clicked, popup should be displayed.");

@@ -57,7 +57,6 @@ public class UiScaler : MonoBehaviour
         // If Unity hasn't figured out the height yet we abort to avoid NaN issues
         if (float.IsNaN(currentHeight) || currentHeight <= 0) 
         {
-            Debug.LogWarning($"Skipping scaling for '{textEl.name}' because height is not resolved yet.");
             return; 
         }
 
@@ -89,8 +88,6 @@ public class UiScaler : MonoBehaviour
         {
             textEl.style.fontSize = newFontSize;
         }
-
-        Debug.Log($"Scaled '{textEl.name}' to font size: {newFontSize}");
     }
 
     private static void WaitForLayoutReady(GeometryChangedEvent evt)
