@@ -189,50 +189,28 @@ public class VitureManager : MonoBehaviour
         }
     }
 
-    /*
     private IEnumerator LogHardwareInfoRoutine()
     {
-        while (true)
+        if (targetCamera == null)
         {
-            if (deviceHandle != IntPtr.Zero)
-            {
-                int dutyCycle = xr_device_provider_get_duty_cycle(deviceHandle);
-                Debug.Log($"[VITURE] Current Duty Cycle: {dutyCycle}");
-            }
-            yield return new WaitForSeconds(2f);
+            Debug.LogError("[VITURE] Target Camera is null. Stopping pose tracking.");
+            yield break; 
         }
-    }
-    */
 
-    private IEnumerator LogHardwareInfoRoutine()
-    {
-        while (true)
+        while (deviceHandle != IntPtr.Zero)
         {
-            if (deviceHandle != IntPtr.Zero)
+            // predict_time = 0 for the most immediate data
+            int result = xr_device_provider_get_gl_pose_carina(deviceHandle, poseArray, 0, IntPtr.Zero);
+
+            if (result == 0)
             {
-                // 1. Get the 3DOF Pose from the glasses
-                // predict_time = 0 for the most immediate data
-                int result = xr_device_provider_get_gl_pose_carina(deviceHandle, poseArray, 0, IntPtr.Zero);
+                // poseArray: [0=px, 1=py, 2=pz, 3=qw, 4=qx, 5=qy, 6=qz]
+                Quaternion rawRot = new Quaternion(-poseArray[4], -poseArray[5], poseArray[6], poseArray[3]);
 
-                if (result == 0 && targetCamera != null)
-                {
-                    // The SDK returns: [pos_x, pos_y, pos_z, quat_w, quat_x, quat_y, quat_z]
-                    // Note: The coordinate system is OpenGL (Right-Handed)
-                    Quaternion rawRot = new Quaternion(poseArray[4], poseArray[5], poseArray[6], poseArray[3]);
-                    
-                    // Convert to Unity (Left-Handed) coordinate system
-                    // Usually involves flipping the Z and W or similar depending on mount orientation
-                    rawRot = new Quaternion(-rawRot.x, -rawRot.y, rawRot.z, rawRot.w);
-
-                    targetCamera.localRotation = rawRot;
-                }
-
-                // 2. Keep logging the hardware status
-                int dutyCycle = xr_device_provider_get_duty_cycle(deviceHandle);
-                Debug.Log($"[VITURE] Pose Success: {result} | Duty: {dutyCycle}");
+                // Applying only rotation, as dampening was found to bot be effective
+                targetCamera.localRotation = Quaternion.Euler(0f, 0f, rawRot.eulerAngles.z);
             }
             
-            // Let's run this every frame for smooth tracking instead of every 2 seconds
             yield return null; 
         }
     }
