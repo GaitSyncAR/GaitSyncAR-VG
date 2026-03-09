@@ -30,6 +30,9 @@ public class VitureManager : MonoBehaviour
     [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
     private static extern int xr_device_provider_get_duty_cycle(IntPtr handle);
 
+    [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int xr_device_provider_set_film_mode(IntPtr handle, float voltage);
+
     // --- Utility Import ---
     [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
     private static extern bool xr_device_provider_is_product_id_valid(int product_id);
@@ -195,6 +198,20 @@ public class VitureManager : MonoBehaviour
                 if (res == 0)
                 {
                     xr_device_provider_start(deviceHandle);
+
+                    // ATTEMPT TO TURN OFF THE ELECTROCHROMIC FILTER (DIMMING) ON STARTUP
+                    // Voltage is 0.0f (transparent/off) to 1.0f (fully dark)
+                    int filmResult = xr_device_provider_set_film_mode(deviceHandle, 0.0f);
+                    
+                    if (filmResult == 0)
+                    {
+                        Debug.LogWarning("[VITURE] Luma Ultra electrochromic film successfully turned OFF.");
+                    }
+                    else
+                    {
+                        Debug.LogError($"[VITURE] Failed to turn off electrochromic film. Error code: {filmResult}");
+                    }
+
                     StartCoroutine(LogHardwareInfoRoutine());
                 }
             }
