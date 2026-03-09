@@ -28,30 +28,29 @@ public class VitureManager : MonoBehaviour
 
     // --- Device Control Imports ---
     [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int xr_device_provider_get_duty_cycle(IntPtr handle);
+    private static extern bool xr_device_provider_is_product_id_valid(int product_id);
+
+    [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int xr_device_provider_get_gl_pose_carina(IntPtr handle, float[] pose, double predict_time, IntPtr pose_status);
 
     [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
     private static extern int xr_device_provider_set_film_mode(IntPtr handle, float voltage);
 
-    // --- Utility Import ---
-    [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-    private static extern bool xr_device_provider_is_product_id_valid(int product_id);
-
-    // imports for rotation
-    [DllImport(DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
-    private static extern int xr_device_provider_get_gl_pose_carina(IntPtr handle, float[] pose, double predict_time, IntPtr pose_status);
-
+    [Header("Tracking Setup")]
     public Transform targetCamera; // Main Camera
-    private float[] poseArray = new float[7]; // [px, py, pz, qw, qx, qy, qz]
 
+    // State tracking
+    private float[] poseArray = new float[7]; 
     private IntPtr deviceHandle = IntPtr.Zero;
-    private AndroidJavaObject usbConnection; // Keeping this alive so the file descriptor doesn't close!
+    private AndroidJavaObject usbConnection; 
+    
+    // Permission tracking
     private bool isWaitingForPermission = false;
     private int pendingProductId = 0;
 
     void Start()
     {
-        Debug.LogWarning("[VITURE] THE SCRIPT IS ALIVE AND RUNNING!");
+        Debug.LogWarning("[VITURE] Script Alive. Starting background USB monitor...");
 
         if (Application.platform != RuntimePlatform.Android)
         {
@@ -59,9 +58,68 @@ public class VitureManager : MonoBehaviour
             return;
         }
 
-        ConnectAndStart();
+        if (targetCamera == null)
+        {
+            Debug.LogError("[VITURE] Target Camera is not assigned!");
+        }
+
+        // Start the background loop that constantly looks for the glasses
+        StartCoroutine(UsbMonitorRoutine());
     }
 
+    // ==========================================
+    // 1. BACKGROUND USB MONITOR (HOT-PLUGGING)
+    // ==========================================
+    private IEnumerator UsbMonitorRoutine()
+    {
+        while (true)
+        {
+            // Only search if we aren't connected AND aren't currently waiting for a permission popup
+            if (deviceHandle == IntPtr.Zero && !isWaitingForPermission)
+            {
+                CheckForGlasses();
+            }
+            
+            // Wait 2 seconds before checking again (saves battery)
+            yield return new WaitForSeconds(2.0f);
+        }
+    }
+
+    private void CheckForGlasses()
+    {
+        using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+        using (AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+        using (AndroidJavaObject usbManager = currentActivity.Call<AndroidJavaObject>("getSystemService", "usb"))
+        using (AndroidJavaObject deviceList = usbManager.Call<AndroidJavaObject>("getDeviceList"))
+        using (AndroidJavaObject values = deviceList.Call<AndroidJavaObject>("values"))
+        using (AndroidJavaObject iterator = values.Call<AndroidJavaObject>("iterator"))
+        {
+            while (iterator.Call<bool>("hasNext"))
+            {
+                using (AndroidJavaObject usbDevice = iterator.Call<AndroidJavaObject>("next"))
+                {
+                    int productId = usbDevice.Call<int>("getProductId");
+
+                    if (xr_device_provider_is_product_id_valid(productId))
+                    {
+                        if (usbManager.Call<bool>("hasPermission", usbDevice))
+                        {
+                            OpenAndInitialize(usbManager, usbDevice, productId);
+                        }
+                        else
+                        {
+                            RequestUsbPermission(usbManager, usbDevice, currentActivity, productId);
+                        }
+                        return; // Found the glasses, stop searching this loop
+                    }
+                }
+            }
+        }
+    }
+
+    // ==========================================
+    // 2. PERMISSION HANDLING
+    // ==========================================
     private void RequestUsbPermission(AndroidJavaObject usbManager, AndroidJavaObject usbDevice, AndroidJavaObject currentActivity, int productId)
     {
         try
@@ -80,7 +138,6 @@ public class VitureManager : MonoBehaviour
                     using (AndroidJavaObject pendingIntent = pendingIntentClass.CallStatic<AndroidJavaObject>(
                         "getBroadcast", currentActivity, 0, intent, flags))
                     {
-                        // Setting flags before triggering the popup
                         isWaitingForPermission = true;
                         pendingProductId = productId;
 
@@ -96,34 +153,12 @@ public class VitureManager : MonoBehaviour
         }
     }
 
-    private IEnumerator WaitForUsbPermission(AndroidJavaObject usbManager, AndroidJavaObject usbDevice, int productId)
-    {
-        // Give the user 30 seconds to answer the prompt
-        float timeout = 30f; 
-
-        while (timeout > 0)
-        {
-            // Check if the permission has flipped to true
-            if (usbManager.Call<bool>("hasPermission", usbDevice))
-            {
-                Debug.LogWarning("[VITURE] Permission Granted! Initializing SDK now...");
-                OpenAndInitialize(usbManager, usbDevice, productId);
-                yield break; // Stop the coroutine
-            }
-
-            timeout -= 0.5f;
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        Debug.LogError("[VITURE] USB Permission request timed out or was denied by the user.");
-    }
-
     void OnApplicationFocus(bool hasFocus)
     {
-        // If we regained focus AND we were waiting for the user to answer the USB prompt
+        // When the user taps Allow/Deny, Unity regains focus.
         if (hasFocus && isWaitingForPermission)
         {
-            isWaitingForPermission = false; // Reset the flag
+            isWaitingForPermission = false; 
             Debug.LogWarning("[VITURE] App regained focus! Re-checking USB permissions in 0.5s...");
             StartCoroutine(RetryConnectionAfterDelay());
         }
@@ -131,151 +166,87 @@ public class VitureManager : MonoBehaviour
 
     private IEnumerator RetryConnectionAfterDelay()
     {
-        // Give the Android OS a moment to update its internal permission state 
+        // Give Android OS a moment to update its internal permission state
         yield return new WaitForSeconds(0.5f);
-        
-        // Run the entire discovery process again. 
-        // This time, hasPermission will return true and it will boot!
-        ConnectAndStart(); 
+        CheckForGlasses(); 
     }
 
-    private void ConnectAndStart()
-    {
-        Debug.LogWarning("[VITURE] Starting USB Discovery...");
-        
-        using (AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-        using (AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
-        using (AndroidJavaObject usbManager = currentActivity.Call<AndroidJavaObject>("getSystemService", "usb"))
-        using (AndroidJavaObject deviceList = usbManager.Call<AndroidJavaObject>("getDeviceList"))
-        using (AndroidJavaObject values = deviceList.Call<AndroidJavaObject>("values"))
-        using (AndroidJavaObject iterator = values.Call<AndroidJavaObject>("iterator"))
-        {
-            if (!iterator.Call<bool>("hasNext"))
-            {
-                Debug.LogError("[VITURE] No USB devices detected at all. Is the OTG/USB host enabled on your phone?");
-            }
-
-            while (iterator.Call<bool>("hasNext"))
-            {
-                using (AndroidJavaObject usbDevice = iterator.Call<AndroidJavaObject>("next"))
-                {
-                    int productId = usbDevice.Call<int>("getProductId");
-                    Debug.LogWarning($"[VITURE] Checking Device: ProductID {productId}");
-
-                    if (xr_device_provider_is_product_id_valid(productId))
-                    {
-                        Debug.LogWarning("[VITURE] VITURE Glasses detected! Requesting permission...");
-
-                        if (usbManager.Call<bool>("hasPermission", usbDevice))
-                        {
-                            OpenAndInitialize(usbManager, usbDevice, productId);
-                        }
-                        else
-                        {
-                            Debug.LogWarning("[VITURE] PERMISSION DENIED by Android. Requesting...");
-                            RequestUsbPermission(usbManager, usbDevice, currentActivity, productId);
-                        }
-                        return; 
-                    }
-                }
-            }
-        }
-    }
-
+    // ==========================================
+    // 3. INITIALIZATION & HARDWARE CONTROL
+    // ==========================================
     private void OpenAndInitialize(AndroidJavaObject usbManager, AndroidJavaObject usbDevice, int productId)
     {
         usbConnection = usbManager.Call<AndroidJavaObject>("openDevice", usbDevice);
         if (usbConnection != null)
         {
             int fd = usbConnection.Call<int>("getFileDescriptor");
-            Debug.LogWarning($"[VITURE] Connection Success! FD: {fd}. Calling Create...");
             
             deviceHandle = xr_device_provider_create(productId, fd);
             if (deviceHandle != IntPtr.Zero)
             {
                 int res = xr_device_provider_initialize(deviceHandle, null, null);
-                Debug.LogWarning($"[VITURE] Init Result: {res}");
                 if (res == 0)
                 {
+                    // Boot up the glasses
                     xr_device_provider_start(deviceHandle);
-
-                    // ATTEMPT TO TURN OFF THE ELECTROCHROMIC FILTER (DIMMING) ON STARTUP
-                    // Voltage is 0.0f (transparent/off) to 1.0f (fully dark)
-                    int filmResult = xr_device_provider_set_film_mode(deviceHandle, 0.0f);
                     
-                    if (filmResult == 0)
-                    {
-                        Debug.LogWarning("[VITURE] Luma Ultra electrochromic film successfully turned OFF.");
-                    }
-                    else
-                    {
-                        Debug.LogError($"[VITURE] Failed to turn off electrochromic film. Error code: {filmResult}");
-                    }
+                    // --- TURN OFF ELECTROCHROMIC FILTER ---
+                    // 0.0f = fully transparent/off. 1.0f = fully dark.
+                    int filmResult = xr_device_provider_set_film_mode(deviceHandle, 0.0f);
+                    Debug.LogWarning($"[VITURE] Electrochromic film set to OFF. Result: {filmResult}");
 
-                    StartCoroutine(LogHardwareInfoRoutine());
+                    // Start the head tracking loop
+                    StartCoroutine(PoseTrackingRoutine());
                 }
             }
         }
-        else
-        {
-            Debug.LogError("[VITURE] Failed to openDevice even with permission.");
-        }
     }
 
-    private void InitializeSDK(int productId, int fileDescriptor)
+    // ==========================================
+    // 4. METRONOME POSE TRACKING
+    // ==========================================
+    private IEnumerator PoseTrackingRoutine()
     {
-        deviceHandle = xr_device_provider_create(productId, fileDescriptor);
-        
-        if (deviceHandle != IntPtr.Zero)
-        {
-            // Init
-            int initResult = xr_device_provider_initialize(deviceHandle, null, null);
-            if (initResult == 0) 
-            {
-                // Start
-                xr_device_provider_start(deviceHandle);
-                Debug.Log("[VITURE] SDK Started successfully! Starting data loop...");
-                
-                // Start Loop
-                StartCoroutine(LogHardwareInfoRoutine());
-            }
-            else
-            {
-                Debug.LogError($"[VITURE] Initialization failed: {initResult}");
-            }
-        }
-    }
-
-    private IEnumerator LogHardwareInfoRoutine()
-    {
-        if (targetCamera == null)
-        {
-            Debug.LogError("[VITURE] Target Camera is null. Stopping pose tracking.");
-            yield break; 
-        }
+        int disconnectFailsafe = 0;
 
         while (deviceHandle != IntPtr.Zero)
         {
-            // predict_time = 0 for the most immediate data
             int result = xr_device_provider_get_gl_pose_carina(deviceHandle, poseArray, 0, IntPtr.Zero);
 
             if (result == 0)
             {
-                // poseArray: [0=px, 1=py, 2=pz, 3=qw, 4=qx, 5=qy, 6=qz]
-                Quaternion rawRot = new Quaternion(-poseArray[4], -poseArray[5], poseArray[6], poseArray[3]);
+                disconnectFailsafe = 0; // Reset failsafe on success
 
-                // Applying only rotation, as dampening was found to bot be effective
-                targetCamera.localRotation = Quaternion.Euler(0f, 0f, rawRot.eulerAngles.z);
+                if (targetCamera != null)
+                {
+                    // Convert to Unity coordinate system
+                    Quaternion rawRot = new Quaternion(-poseArray[4], -poseArray[5], poseArray[6], poseArray[3]);
+
+                    // METRONOME LOGIC: Isolate the Z-axis (roll) and lock X and Y
+                    targetCamera.localRotation = Quaternion.Euler(0f, 0f, rawRot.eulerAngles.z);
+                }
+            }
+            else
+            {
+                // If we fail to get the pose multiple times in a row, the glasses were likely unplugged
+                disconnectFailsafe++;
+                if (disconnectFailsafe > 10)
+                {
+                    Debug.LogWarning("[VITURE] Glasses disconnected mid-app! Cleaning up...");
+                    CleanupDevice();
+                    yield break; // Exit this coroutine. The monitor will wait for a new connection.
+                }
             }
             
             yield return null; 
         }
     }
 
-    void OnDestroy()
+    // ==========================================
+    // 5. CLEANUP
+    // ==========================================
+    private void CleanupDevice()
     {
-        StopAllCoroutines();
-
         if (deviceHandle != IntPtr.Zero)
         {
             xr_device_provider_stop(deviceHandle);
@@ -284,12 +255,17 @@ public class VitureManager : MonoBehaviour
             deviceHandle = IntPtr.Zero;
         }
 
-        // Cleaning up the Java USB connection
         if (usbConnection != null)
         {
             usbConnection.Call("close");
             usbConnection.Dispose();
             usbConnection = null;
         }
+    }
+
+    void OnDestroy()
+    {
+        StopAllCoroutines();
+        CleanupDevice();
     }
 }
