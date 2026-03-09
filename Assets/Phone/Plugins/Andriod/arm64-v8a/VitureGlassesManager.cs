@@ -42,7 +42,9 @@ public class VitureManager : MonoBehaviour
     private float[] poseArray = new float[7]; // [px, py, pz, qw, qx, qy, qz]
 
     private IntPtr deviceHandle = IntPtr.Zero;
-    private AndroidJavaObject usbConnection; // Keep this alive so the file descriptor doesn't close!
+    private AndroidJavaObject usbConnection; // Keeping this alive so the file descriptor doesn't close!
+    private bool isWaitingForPermission = false;
+    private int pendingProductId = 0;
 
     void Start()
     {
@@ -57,34 +59,30 @@ public class VitureManager : MonoBehaviour
         ConnectAndStart();
     }
 
-    private void RequestUsbPermission(AndroidJavaObject usbManager, AndroidJavaObject usbDevice, AndroidJavaObject currentActivity)
+    private void RequestUsbPermission(AndroidJavaObject usbManager, AndroidJavaObject usbDevice, AndroidJavaObject currentActivity, int productId)
     {
         try
         {
             string ACTION_USB_PERMISSION = "com.viture.usb.PERMISSION";
             
-            // Creating the Intent
             using (AndroidJavaObject intent = new AndroidJavaObject("android.content.Intent", ACTION_USB_PERMISSION))
             {
-                // Explicit request
                 string packageName = currentActivity.Call<string>("getPackageName");
                 intent.Call<AndroidJavaObject>("setPackage", packageName);
 
-                // 2. Creating the PendingIntent with FLAG_MUTABLE (33554432)
-                int flags = 33554432; 
+                int flags = 33554432; // FLAG_MUTABLE
                 
                 using (AndroidJavaClass pendingIntentClass = new AndroidJavaClass("android.app.PendingIntent"))
                 {
                     using (AndroidJavaObject pendingIntent = pendingIntentClass.CallStatic<AndroidJavaObject>(
-                        "getBroadcast", 
-                        currentActivity, 
-                        0, 
-                        intent, 
-                        flags))
+                        "getBroadcast", currentActivity, 0, intent, flags))
                     {
-                        // 3. Trigger the actual system popup
+                        // Setting flags before triggering the popup
+                        isWaitingForPermission = true;
+                        pendingProductId = productId;
+
                         usbManager.Call("requestPermission", usbDevice, pendingIntent);
-                        Debug.LogWarning("[VITURE] Permission dialog triggered! Check your phone screen.");
+                        Debug.LogWarning("[VITURE] Permission dialog triggered! Waiting for focus return...");
                     }
                 }
             }
@@ -93,6 +91,49 @@ public class VitureManager : MonoBehaviour
         {
             Debug.LogError("[VITURE] Failed to request USB permission: " + e.Message);
         }
+    }
+
+    private IEnumerator WaitForUsbPermission(AndroidJavaObject usbManager, AndroidJavaObject usbDevice, int productId)
+    {
+        // Give the user 30 seconds to answer the prompt
+        float timeout = 30f; 
+
+        while (timeout > 0)
+        {
+            // Check if the permission has flipped to true
+            if (usbManager.Call<bool>("hasPermission", usbDevice))
+            {
+                Debug.LogWarning("[VITURE] Permission Granted! Initializing SDK now...");
+                OpenAndInitialize(usbManager, usbDevice, productId);
+                yield break; // Stop the coroutine
+            }
+
+            timeout -= 0.5f;
+            yield return new WaitForSeconds(0.5f);
+        }
+
+        Debug.LogError("[VITURE] USB Permission request timed out or was denied by the user.");
+    }
+
+    void OnApplicationFocus(bool hasFocus)
+    {
+        // If we regained focus AND we were waiting for the user to answer the USB prompt
+        if (hasFocus && isWaitingForPermission)
+        {
+            isWaitingForPermission = false; // Reset the flag
+            Debug.LogWarning("[VITURE] App regained focus! Re-checking USB permissions in 0.5s...");
+            StartCoroutine(RetryConnectionAfterDelay());
+        }
+    }
+
+    private IEnumerator RetryConnectionAfterDelay()
+    {
+        // Give the Android OS a moment to update its internal permission state 
+        yield return new WaitForSeconds(0.5f);
+        
+        // Run the entire discovery process again. 
+        // This time, hasPermission will return true and it will boot!
+        ConnectAndStart(); 
     }
 
     private void ConnectAndStart()
@@ -128,9 +169,8 @@ public class VitureManager : MonoBehaviour
                         }
                         else
                         {
-                            // This is likely where you are stuck!
-                            Debug.LogError("[VITURE] PERMISSION DENIED by Android. You need a Permission Intent.");
-                            RequestUsbPermission(usbManager, usbDevice, currentActivity);
+                            Debug.LogWarning("[VITURE] PERMISSION DENIED by Android. Requesting...");
+                            RequestUsbPermission(usbManager, usbDevice, currentActivity, productId);
                         }
                         return; 
                     }
