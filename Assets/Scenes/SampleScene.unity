@@ -591,6 +591,50 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5052447915363025023, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
   m_PrefabInstance: {fileID: 221616749}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1375737368
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1375737370}
+  - component: {fileID: 1375737369}
+  m_Layer: 0
+  m_Name: BLE_Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1375737369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1375737368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 411a0f001aa35de4a8f7e1afe1444784, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GaitSyncBLE
+--- !u!4 &1375737370
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1375737368}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.09737, y: 0, z: 31.71852}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1587569967 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7195838763430341477, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
@@ -1060,3 +1104,4 @@ SceneRoots:
   - {fileID: 1964602099}
   - {fileID: 1979888331}
   - {fileID: 2015428336}
+  - {fileID: 1375737370}

@@ -1,0 +1,5 @@
+D:/Final Year Project Local/GaitSyncAR-VG/.utmp/RelWithDebInfo/1o4v2o6c/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/Final Year Project Local/GaitSyncAR-VG/.utmp/RelWithDebInfo/1o4v2o6c/arm64-v8a/CMakeFiles/rebuild_cache.dir
+D:/Final Year Project Local/GaitSyncAR-VG/.utmp/RelWithDebInfo/1o4v2o6c/arm64-v8a/GameActivity/CMakeFiles/game.dir
+D:/Final Year Project Local/GaitSyncAR-VG/.utmp/RelWithDebInfo/1o4v2o6c/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
+D:/Final Year Project Local/GaitSyncAR-VG/.utmp/RelWithDebInfo/1o4v2o6c/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir

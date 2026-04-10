@@ -1,0 +1,2 @@
+D:\Final Year Project Local\GaitSyncAR-VG\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\CMakeLists.txt
+D:\Final Year Project Local\GaitSyncAR-VG\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\src\main\cpp\GameActivity\CMakeLists.txt
