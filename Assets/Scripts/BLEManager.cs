@@ -153,7 +153,7 @@ public class BLEManager : MonoBehaviour
             // Found the TX characteristic, Subscribing to it.
             if (characteristic.ToLower() == nusTxCharacteristicUUID)
             {
-                SubscribeToDeviceMessages(address, service, characteristic, deviceName);
+                SubscribeToDeviceMessages(address, service, characteristic);
             }
         },
         (address) => 
@@ -162,17 +162,21 @@ public class BLEManager : MonoBehaviour
             Debug.LogWarning($"Lost connection to {deviceName} ({address})!");
             if (syncedDevicesCount > 0) syncedDevicesCount--;
             OnDeviceDisconnected?.Invoke(deviceName);
-            StartCoroutine(AttemptReconnection(address, deviceName));
+            StartCoroutine(AttemptReconnection(address));
         });
     }
 
-    private void SubscribeToDeviceMessages(string address, string service, string characteristic, string deviceName)
+    private void SubscribeToDeviceMessages(string address, string service, string characteristic)
     {
         BluetoothLEHardwareInterface.SubscribeCharacteristicWithDeviceAddress(address, service, characteristic, 
         
             (notifyAddress, notifyCharacteristic) => {
-                Debug.Log($"Subscribed to {deviceName}!");
-                OnDeviceReconnected?.Invoke(deviceName); // reconnect and connect are same UI wise
+                if (activeConnections.ContainsKey(notifyAddress)) {
+                    // prevents ble reconnect callback conflict
+                    Debug.Log($"Subscribed to {activeConnections[notifyAddress]}");
+                }
+
+                OnDeviceReconnected?.Invoke(activeConnections[notifyAddress]); // reconnect and connect are same UI wise
                 ConnectNextDeviceInQueue();
             },
             
@@ -180,6 +184,11 @@ public class BLEManager : MonoBehaviour
             {
                 // empty data check
                 if (dataBytes == null || dataBytes.Length == 0) return;
+
+                // We use the fresh MAC address the OS just handed us to find out who really sent this.
+                // Prevents ble reconnect callback conflict
+                if (!activeConnections.ContainsKey(notifyAddress)) return;
+                string trueDeviceName = activeConnections[notifyAddress];
 
                 // The first byte indicates the message type
                 int messageType = dataBytes[0]; 
@@ -190,7 +199,7 @@ public class BLEManager : MonoBehaviour
                         if (dataBytes.Length == 5) 
                         {
                             uint timestamp = BitConverter.ToUInt32(dataBytes, 1);
-                            bool isRightFoot = deviceName.Equals("GaitSync-Right");
+                            bool isRightFoot = trueDeviceName.Equals("GaitSync-Right");
                             
                             // Broadcasting data if someone is listening
                             OnStepReceived?.Invoke(isRightFoot, timestamp);
@@ -201,8 +210,8 @@ public class BLEManager : MonoBehaviour
                         if (dataBytes.Length == 2)
                         {
                             int batteryLevel = dataBytes[1];
-                            Debug.Log($"Battery Level from {deviceName}: {batteryLevel}%");
-                            OnBatteryLevelReceived?.Invoke(deviceName, batteryLevel);
+                            Debug.Log($"Battery Level from {trueDeviceName}: {batteryLevel}%");
+                            OnBatteryLevelReceived?.Invoke(trueDeviceName, batteryLevel);
                         }
                         break;
 
@@ -211,7 +220,7 @@ public class BLEManager : MonoBehaviour
                         {
                             uint confirmedTime = BitConverter.ToUInt32(dataBytes, 1);
                             
-                            Debug.Log($"SUCCESS: {deviceName} confirmed clock sync at timestamp {confirmedTime}");
+                            Debug.Log($"SUCCESS: {trueDeviceName} confirmed clock sync at timestamp {confirmedTime}");
                             
                             syncedDevicesCount++;
 
@@ -250,15 +259,15 @@ public class BLEManager : MonoBehaviour
     }
 
     // BLE reconnection can be tricky, especially on Android. This method will attempt to reconnect to a device if the connection is lost, with a delay to prevent rapid retry loops.
-    private IEnumerator AttemptReconnection(string macAddress, string deviceName)
+    private IEnumerator AttemptReconnection(string macAddress)
     {
-        Debug.Log($"Starting reconnection loop for {deviceName}...");
+        Debug.Log($"Starting reconnection loop for {activeConnections[macAddress]}...");
 
         // Wait 3 seconds to let the Bluetooth hardware settle
         yield return new WaitForSeconds(3.0f);
 
         // reconnection attempt
-        Debug.Log($"Attempting to reconnect to {deviceName} ({macAddress})...");
+        Debug.Log($"Attempting to reconnect to {activeConnections[macAddress]} ({macAddress})...");
         BluetoothLEHardwareInterface.ConnectToPeripheral(macAddress, 
             
             (address) => { /* Connected */ },
@@ -268,16 +277,18 @@ public class BLEManager : MonoBehaviour
                 if (characteristic.ToLower() == nusTxCharacteristicUUID)
                 {
                     // If we find the TX characteristic, subscribe to it again
-                    SubscribeToDeviceMessages(address, service, characteristic, deviceName);
-                    Debug.Log($"SUCCESS: Reconnected to {deviceName}!");
-                    OnDeviceReconnected?.Invoke(deviceName);
+                    string trueDeviceName = activeConnections[address];
+                    SubscribeToDeviceMessages(address, service, characteristic);
+                    Debug.Log($"SUCCESS: Reconnected to {trueDeviceName}!");
+                    OnDeviceReconnected?.Invoke(trueDeviceName);
                 }
             },
             (address) => 
             {
                 // If it disconnects AGAIN, this callback fires, restarting the loop.
-                Debug.LogWarning($"Reconnection to {deviceName} failed or dropped again.");
-                StartCoroutine(AttemptReconnection(macAddress, deviceName));
+                Debug.LogWarning($"Reconnection to {activeConnections[address]} failed or dropped again.");
+                OnDeviceDisconnected?.Invoke(activeConnections[address]);
+                StartCoroutine(AttemptReconnection(address));
             });
     }
 }
