@@ -601,6 +601,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1375737370}
   - component: {fileID: 1375737371}
+  - component: {fileID: 1375737372}
   m_Layer: 0
   m_Name: BLE_Manager
   m_TagString: Untagged
@@ -635,6 +636,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3603472d376a9543aeca7729513b86b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BLEManager
+--- !u!114 &1375737372
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1375737368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6003d6b1796ebf745a61d8e0e1855089, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GaitMetrics
+  LeftStepHistory: []
+  RightStepHistory: []
 --- !u!1 &1587569967 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7195838763430341477, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
@@ -983,6 +998,8 @@ MonoBehaviour:
   profileRowTemplate: {fileID: 9197481963319205126, guid: 9c543f45019907d4ba32501e5297abda, type: 3}
   popupTemplate: {fileID: 9197481963319205126, guid: 988c2aa3fdce8484198c9b01b0e7ac6a, type: 3}
   yesNoPopupTemplate: {fileID: 9197481963319205126, guid: 32d2a59a8c713d046a996aecd1ce181d, type: 3}
+  ankleSensorConnectedIcon: {fileID: 2800000, guid: 5442679c8673e2346887717ef6b4ac52, type: 3}
+  ankleSensorDisconnectedIcon: {fileID: 2800000, guid: 78017c93c2050a245a166dff306a7262, type: 3}
 --- !u!114 &1964602101
 MonoBehaviour:
   m_ObjectHideFlags: 0

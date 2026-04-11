@@ -31,6 +31,12 @@ public class UISettingsControllerV3 : MonoBehaviour
     [Tooltip("Popup template for yes/no confirmation dialogs")]
     public VisualTreeAsset yesNoPopupTemplate;
 
+    [Tooltip("Ankle Sensor Connected Icon")]
+    public Texture2D ankleSensorConnectedIcon;
+
+    [Tooltip("Ankle Sensor Disconnected Icon")]
+    public Texture2D ankleSensorDisconnectedIcon;
+
     // --- PRIVATE UI REFERENCES ---
     private VisualElement root;
     private VisualElement remotePage;
@@ -81,6 +87,18 @@ public class UISettingsControllerV3 : MonoBehaviour
         SetupPositionControls();
         SetupShapeControls();
         SetupColorControls();
+
+        // 5. Setup battery level listener
+        BLEManager.OnBatteryLevelReceived += (deviceName, level) => 
+        {
+            // Updating label text of RightSensorBattery
+            var batteryLabel = root.Q<Label>(deviceName == "GaitSync-Right" ? "RightSensorBattery" : "LeftSensorBattery");
+            if (batteryLabel != null) { batteryLabel.text = level.ToString() + "%"; }
+
+            // updating icon of RightAnkleSensor button
+            var sensorBtn = root.Q<Button>(deviceName == "GaitSync-Right" ? "RightAnkleSensor" : "LeftAnkleSensor");
+            if (sensorBtn != null) { sensorBtn.iconImage = ankleSensorConnectedIcon; }
+        };
 
         // 5. LOAD SAVED SETTINGS
         LoadSettings();

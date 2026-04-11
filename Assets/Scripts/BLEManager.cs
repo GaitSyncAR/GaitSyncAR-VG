@@ -158,6 +158,7 @@ public class BLEManager : MonoBehaviour
         
         (notifyAddress, notifyCharacteristic) => {
             Debug.Log($"Subscribed to {deviceName}!");
+            ConnectNextDeviceInQueue();
         },
         
         (notifyAddress, notifyCharacteristic, dataBytes) => 
@@ -185,6 +186,7 @@ public class BLEManager : MonoBehaviour
                     if (dataBytes.Length == 2)
                     {
                         int batteryLevel = dataBytes[1];
+                        Debug.Log($"Battery Level from {deviceName}: {batteryLevel}%");
                         OnBatteryLevelReceived?.Invoke(deviceName, batteryLevel);
                     }
                     break;
