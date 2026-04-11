@@ -600,7 +600,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1375737370}
-  - component: {fileID: 1375737369}
+  - component: {fileID: 1375737371}
   m_Layer: 0
   m_Name: BLE_Manager
   m_TagString: Untagged
@@ -608,18 +608,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1375737369
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1375737368}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 411a0f001aa35de4a8f7e1afe1444784, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GaitSyncBLE
 --- !u!4 &1375737370
 Transform:
   m_ObjectHideFlags: 0
@@ -635,6 +623,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1375737371
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1375737368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3603472d376a9543aeca7729513b86b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BLEManager
 --- !u!1 &1587569967 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7195838763430341477, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
