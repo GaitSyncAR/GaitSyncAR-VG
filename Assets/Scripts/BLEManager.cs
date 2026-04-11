@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using System;
 
@@ -15,22 +16,33 @@ public class BLEManager : MonoBehaviour
     // Nordic UART Service UUIDs
     private readonly string nusServiceUUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     private readonly string nusTxCharacteristicUUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Transmission subscribe characteristic
+    private readonly string nusRxCharacteristicUUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // Receive/Write characteristic
 
     // Multi-Device Management
     private int targetDeviceCount = 2; // left and right sensors
     private List<string> pendingConnections = new List<string>();
     private Dictionary<string, string> activeConnections = new Dictionary<string, string>(); // Maps MAC -> Name
+    private int syncedDevicesCount = 0;
+    private long phoneSyncStartTimeMs = 0;
     
     // -40 is basically touching the phone. -90 is across the house.
     private int closeByThreshold = -60;
 
     // --------------------------- Events ---------------------------
-    // Other scripts will listen to these. 
+    // Other scripts will listen to these.
+
     // bool = isRightFoot, uint = timestamp
     public static event Action<bool, uint> OnStepReceived; 
     
     // string = deviceName, int = batteryLevel
     public static event Action<string, int> OnBatteryLevelReceived;
+
+    // Fires only when BOTH devices have confirmed their clocks are synced
+    public static event Action OnSystemReady;
+
+    public static event Action<string> OnDeviceDisconnected; // string = deviceName
+
+    public static event Action<string> OnDeviceReconnected; // string = deviceName
 
     // --------------------------- Methods ---------------------------
     void Start()
@@ -147,8 +159,10 @@ public class BLEManager : MonoBehaviour
         (address) => 
         {
             // Disconnect Callback
-            Debug.Log($"Lost connection to {address}.");
-            activeConnections.Remove(address);
+            Debug.LogWarning($"Lost connection to {deviceName} ({address})!");
+            if (syncedDevicesCount > 0) syncedDevicesCount--;
+            OnDeviceDisconnected?.Invoke(deviceName);
+            StartCoroutine(AttemptReconnection(address, deviceName));
         });
     }
 
@@ -156,41 +170,114 @@ public class BLEManager : MonoBehaviour
     {
         BluetoothLEHardwareInterface.SubscribeCharacteristicWithDeviceAddress(address, service, characteristic, 
         
-        (notifyAddress, notifyCharacteristic) => {
-            Debug.Log($"Subscribed to {deviceName}!");
-            ConnectNextDeviceInQueue();
-        },
-        
-        (notifyAddress, notifyCharacteristic, dataBytes) => 
-        {
-            // empty data check
-            if (dataBytes == null || dataBytes.Length == 0) return;
-
-            // The first byte indicates the message type
-            int messageType = dataBytes[0]; 
-
-            switch (messageType)
+            (notifyAddress, notifyCharacteristic) => {
+                Debug.Log($"Subscribed to {deviceName}!");
+                OnDeviceReconnected?.Invoke(deviceName); // reconnect and connect are same UI wise
+                ConnectNextDeviceInQueue();
+            },
+            
+            (notifyAddress, notifyCharacteristic, dataBytes) => 
             {
-                case 1: // --- STEP EVENT ---
-                    if (dataBytes.Length == 5) 
-                    {
-                        uint timestamp = BitConverter.ToUInt32(dataBytes, 1);
-                        bool isRightFoot = deviceName.Equals("GaitSync-Right");
-                        
-                        // Broadcasting data if someone is listening
-                        OnStepReceived?.Invoke(isRightFoot, timestamp);
-                    }
-                    break;
+                // empty data check
+                if (dataBytes == null || dataBytes.Length == 0) return;
 
-                case 2: // --- BATTERY EVENT ---
-                    if (dataBytes.Length == 2)
-                    {
-                        int batteryLevel = dataBytes[1];
-                        Debug.Log($"Battery Level from {deviceName}: {batteryLevel}%");
-                        OnBatteryLevelReceived?.Invoke(deviceName, batteryLevel);
-                    }
-                    break;
-            }
-        });
+                // The first byte indicates the message type
+                int messageType = dataBytes[0]; 
+
+                switch (messageType)
+                {
+                    case 1: // --- STEP EVENT ---
+                        if (dataBytes.Length == 5) 
+                        {
+                            uint timestamp = BitConverter.ToUInt32(dataBytes, 1);
+                            bool isRightFoot = deviceName.Equals("GaitSync-Right");
+                            
+                            // Broadcasting data if someone is listening
+                            OnStepReceived?.Invoke(isRightFoot, timestamp);
+                        }
+                        break;
+
+                    case 2: // --- BATTERY EVENT ---
+                        if (dataBytes.Length == 2)
+                        {
+                            int batteryLevel = dataBytes[1];
+                            Debug.Log($"Battery Level from {deviceName}: {batteryLevel}%");
+                            OnBatteryLevelReceived?.Invoke(deviceName, batteryLevel);
+                        }
+                        break;
+
+                    case 4: // --- SYNC ACKNOWLEDGMENT EVENT ---
+                        if (dataBytes.Length == 5)
+                        {
+                            uint confirmedTime = BitConverter.ToUInt32(dataBytes, 1);
+                            
+                            Debug.Log($"SUCCESS: {deviceName} confirmed clock sync at timestamp {confirmedTime}");
+                            
+                            syncedDevicesCount++;
+
+                            if (syncedDevicesCount == targetDeviceCount)
+                            {
+                                Debug.Log("--- BOTH SENSORS SYNCED. SYSTEM READY! ---");
+                                OnSystemReady?.Invoke();
+                            }
+                        }
+                        break;
+                }
+            });
+    }
+
+    private void SyncDeviceClocks()
+    {
+        // Recording the exact time the session started on the phone
+        phoneSyncStartTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        
+        // Sending a tiny 1-byte command just to trigger the sensors
+        byte[] payload = new byte[1];
+        payload[0] = 3; // Message Type 3: "Set your baseline now!"
+
+        foreach (var mac in activeConnections.Keys)
+        {
+            BluetoothLEHardwareInterface.WriteCharacteristic(
+                mac, 
+                nusServiceUUID, 
+                nusRxCharacteristicUUID, 
+                payload, 
+                payload.Length, 
+                false, 
+                (address) => { Debug.Log($"Trigger sent to {activeConnections[address]}"); }
+            );
+        }
+    }
+
+    // BLE reconnection can be tricky, especially on Android. This method will attempt to reconnect to a device if the connection is lost, with a delay to prevent rapid retry loops.
+    private IEnumerator AttemptReconnection(string macAddress, string deviceName)
+    {
+        Debug.Log($"Starting reconnection loop for {deviceName}...");
+
+        // Wait 3 seconds to let the Bluetooth hardware settle
+        yield return new WaitForSeconds(3.0f);
+
+        // reconnection attempt
+        Debug.Log($"Attempting to reconnect to {deviceName} ({macAddress})...");
+        BluetoothLEHardwareInterface.ConnectToPeripheral(macAddress, 
+            
+            (address) => { /* Connected */ },
+            (address, service) => { /* Service Found */ },
+            (address, service, characteristic) => 
+            {
+                if (characteristic.ToLower() == nusTxCharacteristicUUID)
+                {
+                    // If we find the TX characteristic, subscribe to it again
+                    SubscribeToDeviceMessages(address, service, characteristic, deviceName);
+                    Debug.Log($"SUCCESS: Reconnected to {deviceName}!");
+                    OnDeviceReconnected?.Invoke(deviceName);
+                }
+            },
+            (address) => 
+            {
+                // If it disconnects AGAIN, this callback fires, restarting the loop.
+                Debug.LogWarning($"Reconnection to {deviceName} failed or dropped again.");
+                StartCoroutine(AttemptReconnection(macAddress, deviceName));
+            });
     }
 }

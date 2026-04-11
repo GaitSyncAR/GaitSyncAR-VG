@@ -94,8 +94,17 @@ public class UISettingsControllerV3 : MonoBehaviour
             // Updating label text of RightSensorBattery
             var batteryLabel = root.Q<Label>(deviceName == "GaitSync-Right" ? "RightSensorBattery" : "LeftSensorBattery");
             if (batteryLabel != null) { batteryLabel.text = level.ToString() + "%"; }
+        };
 
-            // updating icon of RightAnkleSensor button
+        // setup connection listeners to update sensor icons
+        BLEManager.OnDeviceDisconnected += (deviceName) =>
+        {
+            var sensorBtn = root.Q<Button>(deviceName == "GaitSync-Right" ? "RightAnkleSensor" : "LeftAnkleSensor");
+            if (sensorBtn != null) { sensorBtn.iconImage = ankleSensorDisconnectedIcon; }
+        };
+
+        BLEManager.OnDeviceReconnected += (deviceName) =>
+        {
             var sensorBtn = root.Q<Button>(deviceName == "GaitSync-Right" ? "RightAnkleSensor" : "LeftAnkleSensor");
             if (sensorBtn != null) { sensorBtn.iconImage = ankleSensorConnectedIcon; }
         };
