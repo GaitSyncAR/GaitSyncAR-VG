@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 #if UNITY_ANDROID
 using UnityEngine.Android;
@@ -7,16 +8,31 @@ using UnityEngine.Android;
 
 public class BLEManager : MonoBehaviour
 {
+    // --------------------------- Class Fields ---------------------------
     private bool isScanning = false;
     private string connectedDeviceAddress = null;
 
     // Nordic UART Service UUIDs
     private readonly string nusServiceUUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
     private readonly string nusTxCharacteristicUUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Transmission subscribe characteristic
+
+    // Multi-Device Management
+    private int targetDeviceCount = 2; // left and right sensors
+    private List<string> pendingConnections = new List<string>();
+    private Dictionary<string, string> activeConnections = new Dictionary<string, string>(); // Maps MAC -> Name
     
     // -40 is basically touching the phone. -90 is across the house.
-    private int closeByThreshold = -60; 
+    private int closeByThreshold = -60;
 
+    // --------------------------- Events ---------------------------
+    // Other scripts will listen to these. 
+    // bool = isRightFoot, uint = timestamp
+    public static event Action<bool, uint> OnStepReceived; 
+    
+    // string = deviceName, int = batteryLevel
+    public static event Action<string, int> OnBatteryLevelReceived;
+
+    // --------------------------- Methods ---------------------------
     void Start()
     {
     #if UNITY_ANDROID
@@ -29,7 +45,6 @@ public class BLEManager : MonoBehaviour
     private void InitializeBLE()
     {
         BluetoothLEHardwareInterface.Initialize(true, false, () => {
-            Debug.Log("BLE Plugin Booted. Starting simple scan...");
             StartFilteredScan();
         }, (error) => {
             Debug.LogError("BLE Initialization Error: " + error);
@@ -75,83 +90,105 @@ public class BLEManager : MonoBehaviour
     {
         if (isScanning) return;
         isScanning = true;
+        pendingConnections.Clear();
 
         string[] scanFilter = new string[] { nusServiceUUID };
 
+        Debug.Log("Scanning for 2 devices...");
+
         BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(
-            scanFilter,
-            null,
-            (address, name, rssi, bytes) => 
+            scanFilter, null, (address, name, rssi, bytes) => 
             { 
-                Debug.Log($"Found: {name} | MAC: {address} | RSSI: {rssi}");
-                
-                // Connect to the first device that gets close enough
-                if (connectedDeviceAddress == null && rssi >= closeByThreshold)
+                // If we found a new device we haven't logged yet
+                if (!pendingConnections.Contains(address) && !activeConnections.ContainsKey(address))
                 {
-                    connectedDeviceAddress = address; // Lock it so we don't try connecting multiple times
-                    
-                    // stopping scanning before connecting to prevent radio conflicts
-                    BluetoothLEHardwareInterface.StopScan();
-                    isScanning = false;
-                    
-                    // Initiate Connection
-                    ConnectToDevice(address);
+                    Debug.Log($"Found Target: {name} ({address})");
+                    pendingConnections.Add(address);
+                    activeConnections.Add(address, name); // Save name for later
+
+                    // Once we find exactly 2 devices, STOP scanning and begin the queue
+                    if (pendingConnections.Count == targetDeviceCount)
+                    {
+                        BluetoothLEHardwareInterface.StopScan();
+                        isScanning = false;
+                        ConnectNextDeviceInQueue();
+                    }
                 }
-            }, 
-            false, 
-            false  
-        );
+            }, false, false);
     }
 
-    private void ConnectToDevice(string deviceAddress)
+    private void ConnectNextDeviceInQueue()
     {
-        Debug.Log($"<color=yellow>Attempting to connect to {deviceAddress}...</color>");
+        if (pendingConnections.Count == 0)
+        {
+            Debug.Log("ALL DEVICES SUCCESSFULLY CONNECTED!");
+            return;
+        }
 
-        BluetoothLEHardwareInterface.ConnectToPeripheral(deviceAddress, 
-            // Callback 1: Connection Success
-            (address) => {
-                Debug.Log($"<color=green>Connected successfully to {address}!</color>");
-            },
-            
-            // Callback 2: Service Discovered
-            (address, serviceUUID) => {
-                Debug.Log($"Discovered Service: {serviceUUID}");
-            },
-            
-            // Callback 3: Characteristic Discovered
-            (address, serviceUUID, characteristicUUID) => {
-                Debug.Log($"Discovered Characteristic: {characteristicUUID}");
-                
-                // If we found the TX characteristic, subscribe to it immediately!
-                if (characteristicUUID.ToLower() == nusTxCharacteristicUUID)
-                {
-                    SubscribeToDeviceMessages(address, serviceUUID, characteristicUUID);
-                }
-        },
+        // Pop the first MAC address off the list
+        string nextMac = pendingConnections[0];
+        pendingConnections.RemoveAt(0);
+        string deviceName = activeConnections[nextMac];
+
+        Debug.Log($"Connecting to {deviceName} ({nextMac})...");
+
+        BluetoothLEHardwareInterface.ConnectToPeripheral(nextMac, 
         
-        // Callback 4: Disconnected
-        (address) => {
-            Debug.Log($"<color=red>Disconnected from {address}.</color>");
-            connectedDeviceAddress = null; // Reset so we can scan/connect again
+        (address) => { /* Connected */ },
+        (address, service) => { /* Service Found */ },
+        (address, service, characteristic) => 
+        {
+            // Found the TX characteristic, Subscribing to it.
+            if (characteristic.ToLower() == nusTxCharacteristicUUID)
+            {
+                SubscribeToDeviceMessages(address, service, characteristic, deviceName);
+            }
+        },
+        (address) => 
+        {
+            // Disconnect Callback
+            Debug.Log($"Lost connection to {address}.");
+            activeConnections.Remove(address);
         });
     }
 
-    private void SubscribeToDeviceMessages(string address, string service, string characteristic)
+    private void SubscribeToDeviceMessages(string address, string service, string characteristic, string deviceName)
     {
-        Debug.Log($"Subscribing to TX Characteristic: {characteristic}...");
-
         BluetoothLEHardwareInterface.SubscribeCharacteristicWithDeviceAddress(address, service, characteristic, 
-            // Notification action setup successfully
-            (notifyAddress, notifyCharacteristic) => {
-                Debug.Log("<color=cyan>Subscription active! Waiting for messages...</color>");
-            },
-            
-            // Data received from the nRF52840
-            (notifyAddress, notifyCharacteristic, dataBytes) => {
-                
-                string message = System.Text.Encoding.UTF8.GetString(dataBytes);
-                Debug.Log($"<color=white><b>[nRF52840 SAYS]:</b></color> {message}");
+        
+        (notifyAddress, notifyCharacteristic) => {
+            Debug.Log($"Subscribed to {deviceName}!");
+        },
+        
+        (notifyAddress, notifyCharacteristic, dataBytes) => 
+        {
+            // empty data check
+            if (dataBytes == null || dataBytes.Length == 0) return;
+
+            // The first byte indicates the message type
+            int messageType = dataBytes[0]; 
+
+            switch (messageType)
+            {
+                case 1: // --- STEP EVENT ---
+                    if (dataBytes.Length == 5) 
+                    {
+                        uint timestamp = BitConverter.ToUInt32(dataBytes, 1);
+                        bool isRightFoot = deviceName.Equals("GaitSync-Right");
+                        
+                        // Broadcasting data if someone is listening
+                        OnStepReceived?.Invoke(isRightFoot, timestamp);
+                    }
+                    break;
+
+                case 2: // --- BATTERY EVENT ---
+                    if (dataBytes.Length == 2)
+                    {
+                        int batteryLevel = dataBytes[1];
+                        OnBatteryLevelReceived?.Invoke(deviceName, batteryLevel);
+                    }
+                    break;
             }
-        );
+        });
     }
 }
