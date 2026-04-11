@@ -24,6 +24,10 @@ public class BLEManager : MonoBehaviour
     private Dictionary<string, string> activeConnections = new Dictionary<string, string>(); // Maps MAC -> Name
     private int syncedDevicesCount = 0;
     private long phoneSyncStartTimeMs = 0;
+    private bool foundRightSensor = false;
+    private bool foundLeftSensor = false;
+        private string leftSensorName = "GaitSync-Left";
+    private string rightSensorName = "GaitSync-Right";
     
     // -40 is basically touching the phone. -90 is across the house.
     private int closeByThreshold = -60;
@@ -102,11 +106,15 @@ public class BLEManager : MonoBehaviour
     {
         if (isScanning) return;
         isScanning = true;
+
+        // Reset trackers
         pendingConnections.Clear();
+        foundLeftSensor = false;
+        foundRightSensor = false;
 
         string[] scanFilter = new string[] { nusServiceUUID };
 
-        Debug.Log("Scanning for 2 devices...");
+        Debug.Log($"Scanning for strictly 1 ({leftSensorName}) and 1 ({rightSensorName})...");
 
         BluetoothLEHardwareInterface.ScanForPeripheralsWithServices(
             scanFilter, null, (address, name, rssi, bytes) => 
@@ -114,11 +122,31 @@ public class BLEManager : MonoBehaviour
                 // If we found a new device we haven't logged yet
                 if (!pendingConnections.Contains(address) && !activeConnections.ContainsKey(address))
                 {
-                    Debug.Log($"Found Target: {name} ({address})");
-                    pendingConnections.Add(address);
-                    activeConnections.Add(address, name); // Save name for later
+                    bool isRight = name.Equals(rightSensorName);
+                    bool isLeft = name.Equals(leftSensorName);
 
-                    // Once we find exactly 2 devices, STOP scanning and begin the queue
+                    // Checking if its a sensor pair that we need
+                    if (isRight && !foundRightSensor)
+                    {
+                        Debug.Log($"Found Right Sensor: {name} ({address})");
+                        foundRightSensor = true;
+                        pendingConnections.Add(address);
+                        activeConnections.Add(address, name); // Save name for later
+                    }
+                    else if (isLeft && !foundLeftSensor)
+                    {
+                        Debug.Log($"Found Left Sensor: {name} ({address})");
+                        foundLeftSensor = true;
+                        pendingConnections.Add(address);
+                        activeConnections.Add(address, name);
+                    }
+                    else if (isRight || isLeft)
+                    {
+                        // It's a valid sensor, but we already have this foot!
+                        Debug.Log($"Skipping {name} ({address}) - Already found one for this foot.");
+                    }
+
+                    // Once we find exactly one left and one right sensor, STOP scanning and begin the queue
                     if (pendingConnections.Count == targetDeviceCount)
                     {
                         BluetoothLEHardwareInterface.StopScan();
@@ -199,7 +227,7 @@ public class BLEManager : MonoBehaviour
                         if (dataBytes.Length == 5) 
                         {
                             uint timestamp = BitConverter.ToUInt32(dataBytes, 1);
-                            bool isRightFoot = trueDeviceName.Equals("GaitSync-Right");
+                            bool isRightFoot = trueDeviceName.Equals(rightSensorName);
                             
                             // Broadcasting data if someone is listening
                             OnStepReceived?.Invoke(isRightFoot, timestamp);
