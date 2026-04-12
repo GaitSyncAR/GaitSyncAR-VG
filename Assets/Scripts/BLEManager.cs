@@ -22,11 +22,12 @@ public class BLEManager : MonoBehaviour
     private int targetDeviceCount = 2; // left and right sensors
     private List<string> pendingConnections = new List<string>();
     private Dictionary<string, string> activeConnections = new Dictionary<string, string>(); // Maps MAC -> Name
+    private Dictionary<string, long> deviceLatencies = new Dictionary<string, long>();
     private int syncedDevicesCount = 0;
     private long phoneSyncStartTimeMs = 0;
     private bool foundRightSensor = false;
     private bool foundLeftSensor = false;
-        private string leftSensorName = "GaitSync-Left";
+    private string leftSensorName = "GaitSync-Left";
     private string rightSensorName = "GaitSync-Right";
     
     // -40 is basically touching the phone. -90 is across the house.
@@ -162,6 +163,9 @@ public class BLEManager : MonoBehaviour
         if (pendingConnections.Count == 0)
         {
             Debug.Log("ALL DEVICES SUCCESSFULLY CONNECTED!");
+
+            // now sync all their clocks together, so we have a common timestamp for features
+            SyncDeviceClocks();
             return;
         }
 
@@ -265,23 +269,26 @@ public class BLEManager : MonoBehaviour
 
     private void SyncDeviceClocks()
     {
-        // Recording the exact time the session started on the phone
         phoneSyncStartTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         
-        // Sending a tiny 1-byte command just to trigger the sensors
-        byte[] payload = new byte[1];
-        payload[0] = 3; // Message Type 3: "Set your baseline now!"
+        byte[] payload = new byte[1] { 3 }; // Type 3: Hardware Sync Trigger
 
         foreach (var mac in activeConnections.Keys)
         {
+            string deviceMac = mac; 
+            string deviceName = activeConnections[mac];
+            Debug.Log($"Sending clock sync trigger to {deviceName} ({deviceMac}) with phone timestamp {phoneSyncStartTimeMs}ms");
+
             BluetoothLEHardwareInterface.WriteCharacteristic(
-                mac, 
+                deviceMac, 
                 nusServiceUUID, 
                 nusRxCharacteristicUUID, 
                 payload, 
                 payload.Length, 
                 false, 
-                (address) => { Debug.Log($"Trigger sent to {activeConnections[address]}"); }
+                (returnedId) => { 
+                    // can't use this, as we have 2 identical devices, BLE gets confused
+                }
             );
         }
     }
