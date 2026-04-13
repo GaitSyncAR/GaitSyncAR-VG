@@ -22,9 +22,7 @@ public class BLEManager : MonoBehaviour
     private int targetDeviceCount = 2; // left and right sensors
     private List<string> pendingConnections = new List<string>();
     private Dictionary<string, string> activeConnections = new Dictionary<string, string>(); // Maps MAC -> Name
-    private Dictionary<string, long> deviceLatencies = new Dictionary<string, long>();
-    private int syncedDevicesCount = 0;
-    private long phoneSyncStartTimeMs = 0;
+    private int connectionNumber = 0;
     private bool foundRightSensor = false;
     private bool foundLeftSensor = false;
     private string leftSensorName = "GaitSync-Left";
@@ -143,7 +141,7 @@ public class BLEManager : MonoBehaviour
                     }
                     else if (isRight || isLeft)
                     {
-                        // It's a valid sensor, but we already have this foot!
+                        // It's a valid sensor, but we already have this foot
                         Debug.Log($"Skipping {name} ({address}) - Already found one for this foot.");
                     }
 
@@ -156,6 +154,19 @@ public class BLEManager : MonoBehaviour
                     }
                 }
             }, false, false);
+    }
+
+    private void HandleDeviceDrop(string address)
+    {
+        Debug.LogWarning($"Connection dropped for device with MAC {address}");
+        if (!activeConnections.ContainsKey(address)) return;
+        if (pendingConnections.Contains(address)) return;
+        
+        string deviceName = activeConnections[address];
+        pendingConnections.Add(address);
+
+        OnDeviceDisconnected?.Invoke(deviceName);
+        ConnectNextDeviceInQueue();
     }
 
     private void ConnectNextDeviceInQueue()
@@ -191,10 +202,7 @@ public class BLEManager : MonoBehaviour
         (address) => 
         {
             // Disconnect Callback
-            Debug.LogWarning($"Lost connection to {deviceName} ({address})!");
-            if (syncedDevicesCount > 0) syncedDevicesCount--;
-            OnDeviceDisconnected?.Invoke(deviceName);
-            StartCoroutine(AttemptReconnection(address));
+            HandleDeviceDrop(address);
         });
     }
 
@@ -251,16 +259,7 @@ public class BLEManager : MonoBehaviour
                         if (dataBytes.Length == 5)
                         {
                             uint confirmedTime = BitConverter.ToUInt32(dataBytes, 1);
-                            
                             Debug.Log($"SUCCESS: {trueDeviceName} confirmed clock sync at timestamp {confirmedTime}");
-                            
-                            syncedDevicesCount++;
-
-                            if (syncedDevicesCount == targetDeviceCount)
-                            {
-                                Debug.Log("--- BOTH SENSORS SYNCED. SYSTEM READY! ---");
-                                OnSystemReady?.Invoke();
-                            }
                         }
                         break;
                 }
@@ -269,15 +268,13 @@ public class BLEManager : MonoBehaviour
 
     private void SyncDeviceClocks()
     {
-        phoneSyncStartTimeMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        
         byte[] payload = new byte[1] { 3 }; // Type 3: Hardware Sync Trigger
 
         foreach (var mac in activeConnections.Keys)
         {
             string deviceMac = mac; 
             string deviceName = activeConnections[mac];
-            Debug.Log($"Sending clock sync trigger to {deviceName} ({deviceMac}) with phone timestamp {phoneSyncStartTimeMs}ms");
+            Debug.Log($"Sending clock sync trigger to {deviceName} ({deviceMac})");
 
             BluetoothLEHardwareInterface.WriteCharacteristic(
                 deviceMac, 
@@ -291,39 +288,5 @@ public class BLEManager : MonoBehaviour
                 }
             );
         }
-    }
-
-    // BLE reconnection can be tricky, especially on Android. This method will attempt to reconnect to a device if the connection is lost, with a delay to prevent rapid retry loops.
-    private IEnumerator AttemptReconnection(string macAddress)
-    {
-        Debug.Log($"Starting reconnection loop for {activeConnections[macAddress]}...");
-
-        // Wait 3 seconds to let the Bluetooth hardware settle
-        yield return new WaitForSeconds(3.0f);
-
-        // reconnection attempt
-        Debug.Log($"Attempting to reconnect to {activeConnections[macAddress]} ({macAddress})...");
-        BluetoothLEHardwareInterface.ConnectToPeripheral(macAddress, 
-            
-            (address) => { /* Connected */ },
-            (address, service) => { /* Service Found */ },
-            (address, service, characteristic) => 
-            {
-                if (characteristic.ToLower() == nusTxCharacteristicUUID)
-                {
-                    // If we find the TX characteristic, subscribe to it again
-                    string trueDeviceName = activeConnections[address];
-                    SubscribeToDeviceMessages(address, service, characteristic);
-                    Debug.Log($"SUCCESS: Reconnected to {trueDeviceName}!");
-                    OnDeviceReconnected?.Invoke(trueDeviceName);
-                }
-            },
-            (address) => 
-            {
-                // If it disconnects AGAIN, this callback fires, restarting the loop.
-                Debug.LogWarning($"Reconnection to {activeConnections[address]} failed or dropped again.");
-                OnDeviceDisconnected?.Invoke(activeConnections[address]);
-                StartCoroutine(AttemptReconnection(address));
-            });
     }
 }
