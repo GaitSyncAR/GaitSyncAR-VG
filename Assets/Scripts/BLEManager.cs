@@ -22,7 +22,7 @@ public class BLEManager : MonoBehaviour
     private int targetDeviceCount = 2; // left and right sensors
     private List<string> pendingConnections = new List<string>();
     private Dictionary<string, string> activeConnections = new Dictionary<string, string>(); // Maps MAC -> Name
-    private int connectionNumber = 0;
+    private Coroutine ClockUpkeepLoop = null;
     private bool foundRightSensor = false;
     private bool foundLeftSensor = false;
     private string leftSensorName = "GaitSync-Left";
@@ -259,9 +259,14 @@ public class BLEManager : MonoBehaviour
                         if (dataBytes.Length == 5)
                         {
                             uint confirmedTime = BitConverter.ToUInt32(dataBytes, 1);
-                            Debug.Log($"SUCCESS: {trueDeviceName} confirmed clock sync at timestamp {confirmedTime}");
+                            Debug.Log($"------------ SUCCESS: {trueDeviceName} confirmed clock sync at timestamp {confirmedTime} ------------");
+
+                            if (ClockUpkeepLoop == null) 
+                            {
+                                ClockUpkeepLoop = StartCoroutine(ClockUpkeep());
+                            }
                         }
-                        break;
+                    break;
                 }
             });
     }
@@ -287,6 +292,24 @@ public class BLEManager : MonoBehaviour
                     // can't use this, as we have 2 identical devices, BLE gets confused
                 }
             );
+        }
+    }
+
+    private IEnumerator ClockUpkeep()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(10f); 
+
+            if (pendingConnections.Count == 0)
+            {
+                Debug.Log("Upkeep: Performing periodic clock resync...");
+                SyncDeviceClocks();
+            }
+            else
+            {
+                Debug.LogWarning("Upkeep skipped: One or more sensors are offline.");
+            }
         }
     }
 }
