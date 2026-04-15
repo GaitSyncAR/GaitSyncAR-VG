@@ -34,8 +34,8 @@ public class BLEManager : MonoBehaviour
     // --------------------------- Events ---------------------------
     // Other scripts will listen to these.
 
-    // bool = isRightFoot, uint = timestamp
-    public static event Action<bool, uint> OnStepReceived; 
+    // bool = isRightFoot, long = timestamp
+    public static event Action<bool, long> OnStepReceived; 
     
     // string = deviceName, int = batteryLevel
     public static event Action<string, int> OnBatteryLevelReceived;
@@ -236,9 +236,9 @@ public class BLEManager : MonoBehaviour
                 switch (messageType)
                 {
                     case 1: // --- STEP EVENT ---
-                        if (dataBytes.Length == 5) 
+                        if (dataBytes.Length == 9) 
                         {
-                            uint timestamp = BitConverter.ToUInt32(dataBytes, 1);
+                            long timestamp = BitConverter.ToInt64(dataBytes, 1);
                             bool isRightFoot = trueDeviceName.Equals(rightSensorName);
                             
                             // Broadcasting data if someone is listening
@@ -250,15 +250,15 @@ public class BLEManager : MonoBehaviour
                         if (dataBytes.Length == 2)
                         {
                             int batteryLevel = dataBytes[1];
-                            Debug.Log($"Battery Level from {trueDeviceName}: {batteryLevel}%");
+                            // Debug.Log($"Battery Level from {trueDeviceName}: {batteryLevel}%");
                             OnBatteryLevelReceived?.Invoke(trueDeviceName, batteryLevel);
                         }
                         break;
 
                     case 4: // --- SYNC ACKNOWLEDGMENT EVENT ---
-                        if (dataBytes.Length == 5)
+                        if (dataBytes.Length == 9)
                         {
-                            uint confirmedTime = BitConverter.ToUInt32(dataBytes, 1);
+                            long confirmedTime = BitConverter.ToInt64(dataBytes, 1);
                             Debug.Log($"------------ SUCCESS: {trueDeviceName} confirmed clock sync at timestamp {confirmedTime} ------------");
 
                             if (ClockUpkeepLoop == null) 

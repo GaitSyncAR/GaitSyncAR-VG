@@ -8,9 +8,9 @@ public class GaitMetrics : MonoBehaviour
     public struct StepRecord
     {
         public bool isRightFoot;
-        public uint timestamp;
+        public long timestamp;
 
-        public StepRecord(bool right, uint time)
+        public StepRecord(bool right, long time)
         {
             isRightFoot = right;
             timestamp = time;
@@ -32,7 +32,7 @@ public class GaitMetrics : MonoBehaviour
         BLEManager.OnStepReceived -= HandleStepEvent;
     }
 
-    private void HandleStepEvent(bool isRightFoot, uint timestamp)
+    private void HandleStepEvent(bool isRightFoot, long timestamp)
     {
         if (isRightFoot)
         {
