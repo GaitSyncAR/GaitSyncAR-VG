@@ -53,11 +53,6 @@ public class TemplatesPageController : PageController
     // ══════════════════════════════════════════════════════════
     //  Profile List Population
     // ══════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Called on Start and whenever the profile list changes
-    /// (save / delete / rename / reset).
-    /// </summary>
     public void PopulateProfileList()
     {
         if (_scrollView == null) return;
@@ -94,11 +89,6 @@ public class TemplatesPageController : PageController
     // ══════════════════════════════════════════════════════════
     //  Selection
     // ══════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Highlights the named profile and updates the "Selected Template" label.
-    /// Pass an empty string to clear the selection.
-    /// </summary>
     public void SelectProfile(string profileName)
     {
         _selectedName = profileName;
@@ -310,11 +300,6 @@ public class TemplatesPageController : PageController
     // ══════════════════════════════════════════════════════════
     //  External Events
     // ══════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Called whenever any other page applies a profile.
-    /// Refreshes the list so the "selected" highlight stays correct.
-    /// </summary>
     private void OnExternalProfileApplied(string profileName)
     {
         // Refresh the "selected" highlight without re-fetching the list

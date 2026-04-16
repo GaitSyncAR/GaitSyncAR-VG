@@ -5,19 +5,14 @@ using System.Collections.Generic;
 public class UIManager : MonoBehaviour
 {
     [Header("UI")]
-    public UIDocument          uiDocument;
+    public UIDocument         uiDocument;
     public VisualTreeAsset    profileRowTemplate;
     public VisualTreeAsset    popupTemplate;
     public VisualTreeAsset    yesNoPopupTemplate;
 
     [Header("Metronome")]
-    public MetronomeArm       metronomeArm;
-    public Renderer           metronomeRenderer;
-    public Transform          metronomeBar;
-    public Transform          metronomeArmVisuals;
-    public Material           targetMaterial;
-    public Transform          metronomeObject;
-    public RenderTexture      metronomePreviewTexture;
+    public MetronomeController  metronome;
+    public RenderTexture        metronomePreviewTexture;
 
     // ── Add the missing fields ──
     [Header("Movement Settings")]
@@ -54,18 +49,9 @@ public class UIManager : MonoBehaviour
         _templatesCtrl  = new TemplatesPageController();
         _calibrationCtrl = new CalibrationPageController();
 
-        _remoteCtrl.Initialize(uiDocument, metronomeArm);
+        _remoteCtrl.Initialize(uiDocument, metronome);
         _templatesCtrl.Initialize(uiDocument, profileRowTemplate, popupTemplate, yesNoPopupTemplate);
-
-        _calibrationCtrl.InitWithRefs(
-            uiDocument,
-            metronomeObject,
-            metronomeBar,
-            metronomeArmVisuals,
-            movementStep,   // now defined above
-            scaleStep,       // now defined above
-            targetMaterial
-        );
+        _calibrationCtrl.InitWithRefs(uiDocument, metronome, movementStep, scaleStep);
 
         BuildNavigation();
 
@@ -188,27 +174,8 @@ public class UIManager : MonoBehaviour
             ProfileManager.Instance.LoadProfile(PlayerPrefs.GetString("CurrentProfile"));
         }
 
-        var profile = ProfileManager.Instance.currentProfile;
-
-        if (metronomeArm != null)
-        {
-            metronomeArm.bpm = profile.bpm;
-            UIEventBus.EmitBPM(profile.bpm); 
-        }
-
-        if (metronomeObject != null)
-        {
-            metronomeObject.position   = profile.metronomePosition;
-            metronomeObject.localScale = profile.metronomeSize;
-        }
-
-        if (metronomeRenderer != null && targetMaterial != null)
-        {
-            Color c = profile.metronomeColour;
-            targetMaterial.SetColor("_BaseColor",     c);
-            targetMaterial.SetColor("_SpecColor",     c);
-            targetMaterial.SetColor("_EmissionColor", c);
-
+        UserProfile profile = ProfileManager.Instance.currentProfile;
+        Color c = profile.metronomeColour;
             var tab = _root.Q<VisualElement>("ColourControls");
             if (tab != null)
             {
@@ -216,15 +183,9 @@ public class UIManager : MonoBehaviour
                 tab.Q("Green_Slider").Q<SliderInt>().value = (int)(c.g * 255);
                 tab.Q("Blue_Slider").Q<SliderInt>().value  = (int)(c.b * 255);
             }
-        }
 
-        if (metronomeBar != null)
-        {
-            Vector3 barScale = metronomeBar.localScale;
-            barScale.y = profile.metronomeBarScaleY;
-            metronomeBar.localScale = barScale;
-        }
-
+        UIEventBus.EmitBPM(profile.bpm);
+        metronome.ApplyProfile(profile);
         Debug.Log("Profile loaded and applied.");
     }
 }

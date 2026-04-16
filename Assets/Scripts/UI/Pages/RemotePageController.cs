@@ -4,13 +4,13 @@ using System;
 
 public class RemotePageController : PageController
 {
-    private MetronomeArm _metronome;
+    private MetronomeController _metronome;
     private Label        _bpmLabel;
     private Button       _startStopBtn;
 
     private int _currentBpm;
 
-    public new void Initialize(UIDocument doc, MetronomeArm metronome)
+    public new void Initialize(UIDocument doc, MetronomeController metronome)
     {
         base.Initialize(doc);
         _metronome = metronome;
