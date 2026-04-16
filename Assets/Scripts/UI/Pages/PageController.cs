@@ -1,0 +1,33 @@
+using UnityEngine;
+using UnityEngine.UIElements;
+
+// PageController.cs
+// Every controller inherits from this. Handles common boilerplate.
+public abstract class PageController
+{
+    protected UIDocument    Document  { get; private set; }
+    protected VisualElement Root     { get; private set; }
+    protected bool         IsActive { get; private set; }
+
+    public virtual void Initialize(UIDocument doc)
+    {
+        Document = doc;
+        Root     = doc.rootVisualElement;
+    }
+
+    // Called once when the page is shown
+    public virtual void OnPageShow() { }
+
+    // Called once when the page is hidden
+    public virtual void OnPageHide() { }
+
+    protected T Q<T>(string name) where T : VisualElement
+        => Root.Q<T>(name);
+
+    protected void PlayHaptic()
+    {
+        #if UNITY_ANDROID || UNITY_IOS
+            Handheld.Vibrate();
+        #endif
+    }
+}
