@@ -6,21 +6,21 @@ using System.Collections.Generic;
 
 public class TemplatesPageController : PageController
 {
-    // ── UI element references ──
+    // -- UI element references --
     private ScrollView      _scrollView;
     private string          _selectedName = "";
     private Label           _selectedTitle;
 
-    // ── Template assets (passed in at init) ──
+    // -- Template assets (passed in at init) --
     private VisualTreeAsset _rowTemplate;
     private VisualTreeAsset _popupTemplate;
     private VisualTreeAsset _yesNoPopupTemplate;
 
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     //  Initialisation
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
 
-    public new void Initialize(
+    public void Initialize(
         UIDocument        doc,
         VisualTreeAsset   rowTemplate,
         VisualTreeAsset   popupTemplate,
@@ -35,24 +35,24 @@ public class TemplatesPageController : PageController
         _scrollView   = Q<ScrollView>("ScrollView");
         _selectedTitle = Q<Label>("SelectedTitle");
 
-        // ── Wire buttons ──
+        // -- Wire buttons --
         Q<Button>("SaveCurrentSettingsBtn").clicked += OnSaveClicked;
         Q<Button>("ApplySettingsBtn").clicked       += OnApplyClicked;
         Q<Button>("RenameBtn").clicked               += OnRenameClicked;
         Q<Button>("ResetBtn").clicked                += OnResetClicked;
         Q<Button>("DeleteBtn").clicked               += OnDeleteClicked;
 
-        // ── Listen for profile changes from other pages ──
+        // -- Listen for profile changes from other pages --
         UIEventBus.ProfileListChanged += PopulateProfileList;
         UIEventBus.ProfileApplied    += OnExternalProfileApplied;
 
-        // ── Initial population ──
+        // -- Initial population --
         PopulateProfileList();
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     //  Profile List Population
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     public void PopulateProfileList()
     {
         if (_scrollView == null) return;
@@ -86,9 +86,9 @@ public class TemplatesPageController : PageController
         Debug.Log($"[Templates] Loaded {savedProfiles.Count} profiles into UI.");
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     //  Selection
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     public void SelectProfile(string profileName)
     {
         _selectedName = profileName;
@@ -118,11 +118,11 @@ public class TemplatesPageController : PageController
         PlayHaptic();
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     //  Button Callbacks
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
 
-    // ── SAVE ──────────────────────────────────────────────────
+    // SAVE ----------------------------------------------------------
     private void OnSaveClicked()
     {
         PopupManager.Instance.ShowPopup(
@@ -149,7 +149,7 @@ public class TemplatesPageController : PageController
         );
     }
 
-    // ── APPLY ──────────────────────────────────────────────────
+    // APPLY ----------------------------------------------------------
     private void OnApplyClicked()
     {
         if (string.IsNullOrEmpty(_selectedName)) return;
@@ -168,16 +168,16 @@ public class TemplatesPageController : PageController
             onCancel:          () => Debug.Log("[Templates] Apply cancelled."),
             onAction:          _ =>
             {
-                // 1. Save the current profile before switching
+                // Save the current profile before switching
                 ProfileManager.Instance.SaveProfile();
 
-                // 2. Mark this as the new current profile
+                // Mark this as the new current profile
                 PlayerPrefs.SetString("CurrentProfile", _selectedName);
 
-                // 3. Load and apply
+                // Load and apply
                 ProfileManager.Instance.LoadProfile(_selectedName);
 
-                // 4. Notify all listeners (calibration page, remote page, etc.)
+                // Notify all listeners
                 UIEventBus.EmitProfileApplied(_selectedName);
                 UIEventBus.EmitProfileListChanged();
 
@@ -187,7 +187,7 @@ public class TemplatesPageController : PageController
         );
     }
 
-    // ── RENAME ─────────────────────────────────────────────────
+    // RENAME ----------------------------------------------------------
     private void OnRenameClicked()
     {
         if (string.IsNullOrEmpty(_selectedName)) return;
@@ -221,7 +221,7 @@ public class TemplatesPageController : PageController
         );
     }
 
-    // ── RESET ──────────────────────────────────────────────────
+    // RESET ----------------------------------------------------------
     private void OnResetClicked()
     {
         PopupManager.Instance.ShowPopup(
@@ -246,7 +246,7 @@ public class TemplatesPageController : PageController
         );
     }
 
-    // ── DELETE ──────────────────────────────────────────────────
+    // DELETE ----------------------------------------------------------
     private void OnDeleteClicked()
     {
         if (string.IsNullOrEmpty(_selectedName)) return;
@@ -258,12 +258,12 @@ public class TemplatesPageController : PageController
             onCancel:          () => Debug.Log("[Templates] Delete cancelled."),
             onAction:          _ =>
             {
-                // 1Delete the targeted profile
+                // Delete the targeted profile
                 ProfileManager.Instance.DeleteProfile(_selectedName);
                 
                 List<string> remainingProfiles = ProfileManager.Instance.GetAvailableProfiles();
 
-                // SAFETY CHECK: Did we just delete the absolute last profile?
+                // SAFETY CHECK: Did we just delete the absolute last profile
                 if (remainingProfiles.Count == 0)
                 {
                     Debug.Log("[Templates] All profiles deleted. Generating a fallback 'Default' profile.");
@@ -273,10 +273,10 @@ public class TemplatesPageController : PageController
                     remainingProfiles.Add("Default");
                 }
 
-                // SAFETY CHECK: Did we just delete the currently active profile?
+                // SAFETY CHECK: Did we just delete the currently active profile
                 if (PlayerPrefs.GetString("CurrentProfile") == _selectedName)
                 {
-                    // Fall back to the first available profile (which will be "Default" if we just generated it)
+                    // Fall back to the first available profile
                     string fallbackName = remainingProfiles[0];
                     Debug.Log($"[Templates] Active profile deleted. Falling back to '{fallbackName}'.");
                     
@@ -287,7 +287,7 @@ public class TemplatesPageController : PageController
                     UIEventBus.EmitProfileApplied(fallbackName);
                 }
 
-                // 4. Refresh the UI
+                // Refresh UI
                 UIEventBus.EmitProfileListChanged();
                 SelectProfile("");  // clear selection
 
@@ -297,12 +297,12 @@ public class TemplatesPageController : PageController
         );
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     //  External Events
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     private void OnExternalProfileApplied(string profileName)
     {
-        // Refresh the "selected" highlight without re-fetching the list
+        // Refreshing selected highlight without re-fetching the list
         foreach (var btn in _scrollView.Query<Button>("SavedTemplateBtn").ToList())
         {
             if (btn.text == profileName)

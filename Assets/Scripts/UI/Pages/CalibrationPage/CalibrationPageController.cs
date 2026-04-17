@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 public class CalibrationPageController : PageController
 {
-    // ── Expose these to tab controllers ──
+    // --- Exposing to tab controllers ---
     public MetronomeController Metronome { get; private set; }
     public float MovementStep { get; set; } = 0.5f;
     public float ScaleStep    { get; set; } = 0.1f;
@@ -12,7 +12,7 @@ public class CalibrationPageController : PageController
     private VisualElement _shapeControls;
     private VisualElement _colourControls;
 
-    // ── Initialise with the new single Controller ──
+    // --- Initialising ---
     public void InitWithRefs(
         UIDocument doc,
         MetronomeController metronomeController,
@@ -48,9 +48,9 @@ public class CalibrationPageController : PageController
         PlayHaptic();
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     //  Methods called by Tabs
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
 
     public void Move(Vector3 delta)
     {
@@ -85,7 +85,7 @@ public class CalibrationPageController : PageController
     {
         var profile = ProfileManager.Instance.currentProfile;
 
-        // Pull the live, modified values from the Controller and overwrite the profile's data
+        // Pulling modified values from the Controller and overwriting the profile's data
         if (Metronome != null)
         {
             profile.metronomePosition = Metronome.transform.position;

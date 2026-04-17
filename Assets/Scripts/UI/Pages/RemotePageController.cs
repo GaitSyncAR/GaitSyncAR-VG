@@ -10,7 +10,7 @@ public class RemotePageController : PageController
 
     private int _currentBpm;
 
-    public new void Initialize(UIDocument doc, MetronomeController metronome)
+    public void Initialize(UIDocument doc, MetronomeController metronome)
     {
         base.Initialize(doc);
         _metronome = metronome;
@@ -55,7 +55,6 @@ public class RemotePageController : PageController
         PlayHaptic();
     }
 
-    // ── Parameter type matches the event ──
     private void UpdateBPMDisplay(int bpm)
     {
         if (_bpmLabel != null) _bpmLabel.text = bpm.ToString();

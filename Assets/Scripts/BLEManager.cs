@@ -11,7 +11,6 @@ public class BLEManager : MonoBehaviour
 {
     // --------------------------- Class Fields ---------------------------
     private bool isScanning = false;
-    private string connectedDeviceAddress = null;
 
     // Nordic UART Service UUIDs
     private readonly string nusServiceUUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
@@ -27,21 +26,13 @@ public class BLEManager : MonoBehaviour
     private bool foundLeftSensor = false;
     private string leftSensorName = "GaitSync-Left";
     private string rightSensorName = "GaitSync-Right";
-    
-    // -40 is basically touching the phone. -90 is across the house.
-    private int closeByThreshold = -60;
 
     // --------------------------- Events ---------------------------
-    // Other scripts will listen to these.
-
     // bool = isRightFoot, long = timestamp
     public static event Action<bool, long> OnStepReceived; 
     
     // string = deviceName, int = batteryLevel
     public static event Action<string, int> OnBatteryLevelReceived;
-
-    // Fires only when BOTH devices have confirmed their clocks are synced
-    public static event Action OnSystemReady;
 
     public static event Action<string> OnDeviceDisconnected; // string = deviceName
 

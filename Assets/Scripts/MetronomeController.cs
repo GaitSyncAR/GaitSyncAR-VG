@@ -21,14 +21,14 @@ public class MetronomeController : MonoBehaviour
     [Range(0f, 1f)]
     public float tickVolume = 1.0f;
 
-    // ── Internal State ──
+    // -- Internal State --
     private AudioSource _audioSource;
     private float       _phase = 0f;
     private int         _lastHalfCycle = 0;
 
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     // Lifecycle & Events
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
     private void Awake()
     {
         _audioSource = GetComponent<AudioSource>();
@@ -61,7 +61,7 @@ public class MetronomeController : MonoBehaviour
         float angle = maxAngle * Mathf.Sin(_phase);
 
         // Rotate around local X axis
-        transform.localRotation = Quaternion.Euler(angle, 0f, 0f);
+        metronomeArm.localRotation = Quaternion.Euler(angle, 0f, 0f);
 
         int currentHalfCycle = (int)((_phase + Mathf.PI / 2f) / Mathf.PI);
         if (currentHalfCycle > _lastHalfCycle)
@@ -79,9 +79,9 @@ public class MetronomeController : MonoBehaviour
         }
     }
 
-    // ══════════════════════════════════════════════════════════
+    // ---------------------------------------------------------- 
     // Public API (For UI & Profiles)
-    // ══════════════════════════════════════════════════════════
+    // ----------------------------------------------------------
 
     public void SetBPM(int newBpm)         => bpm = newBpm;
     public void SetRunning(bool running)   => isRunning = running;
@@ -90,12 +90,12 @@ public class MetronomeController : MonoBehaviour
     {
         if (profile == null) return;
 
-        bpm                    =    profile.bpm;
+        bpm                       =    profile.bpm;
         transform.position     =    profile.metronomePosition;
         transform.localScale   =    profile.metronomeSize;
         
         SetColor(profile.metronomeColour);
-        ApplyStretch(profile.metronomeBarScaleY);
+        //ApplyStretch(profile.metronomeBarScaleY);
     }
 
     public void SetColor(Color c)

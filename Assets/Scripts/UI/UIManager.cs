@@ -14,7 +14,6 @@ public class UIManager : MonoBehaviour
     public MetronomeController  metronome;
     public RenderTexture        metronomePreviewTexture;
 
-    // ── Add the missing fields ──
     [Header("Movement Settings")]
     public float movementStep = 0.5f;
     public float scaleStep   = 0.1f;
@@ -23,12 +22,12 @@ public class UIManager : MonoBehaviour
     public Texture2D ankleConnectedIcon;
     public Texture2D ankleDisconnectedIcon;
 
-    // ── Page controllers ──
+    // -- Page controllers --
     private RemotePageController       _remoteCtrl;
     private TemplatesPageController   _templatesCtrl;
     private CalibrationPageController _calibrationCtrl;
 
-    // ── Navigation ──
+    // -- Navigation --
     private VisualElement _root;
     private VisualElement _currentPage;
     private readonly List<VisualElement> _pages = new();
@@ -88,9 +87,9 @@ public class UIManager : MonoBehaviour
         if (paused) OnDisable();
     }
 
-    // ─────────────────────────────────────────────────────────
+    // ----------------------------------------------------------
     // Navigation
-    // ─────────────────────────────────────────────────────────
+    // ----------------------------------------------------------
     private void BuildNavigation()
     {
         var remote    = _root.Q<VisualElement>("RemotePage");
@@ -114,20 +113,20 @@ public class UIManager : MonoBehaviour
 
         // ── Page lifecycle ──
         if (_currentPage?.name == "CalibrationPage")
-            _calibrationCtrl.OnPageHide();   // ← call as a method, not an event
+            _calibrationCtrl.OnPageHide();
 
         foreach (var p in _pages)
             p.style.display = (p == page) ? DisplayStyle.Flex : DisplayStyle.None;
 
         if (page.name == "RemotePage")
-            _remoteCtrl.OnPageShow();         // ← call as a method, not an event
+            _remoteCtrl.OnPageShow();
 
         _currentPage = page;
     }
 
-    // ─────────────────────────────────────────────────────────
+    // ----------------------------------------------------------
     // BLE
-    // ─────────────────────────────────────────────────────────
+    // ----------------------------------------------------------
     private void OnBatteryReceived(string device, int level)
     {
         var lbl = _root.Q<Label>(device == "GaitSync-Right"
@@ -153,9 +152,9 @@ public class UIManager : MonoBehaviour
         if (btn != null) btn.iconImage = ankleConnectedIcon;
     }
 
-    // ─────────────────────────────────────────────────────────
+    // ----------------------------------------------------------
     // Profile Save / Load
-    // ─────────────────────────────────────────────────────────
+    // ----------------------------------------------------------
     private void OnProfileApplied(string profileName)
     {
         Debug.Log($"[UIManager] Heard the apply button! Loading profile: {profileName}");

@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 
-// PageController.cs
 // Every controller inherits from this. Handles common boilerplate.
 public abstract class PageController
 {
@@ -15,10 +14,8 @@ public abstract class PageController
         Root     = doc.rootVisualElement;
     }
 
-    // Called once when the page is shown
     public virtual void OnPageShow() { }
 
-    // Called once when the page is hidden
     public virtual void OnPageHide() { }
 
     protected T Q<T>(string name) where T : VisualElement

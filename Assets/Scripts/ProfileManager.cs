@@ -5,14 +5,14 @@ using System.Collections.Generic;
 
 public class ProfileManager
 {
-    // ── Singleton ──────────────────────────────────────────────
+    // Singleton ----------------------------------------------------------
     private static ProfileManager _instance;
     public static ProfileManager Instance => _instance ??= new ProfileManager();
 
     public UserProfile currentProfile;
     private string _saveDirectory = "";
 
-    // ── Constructor ─────────────────────────────────────────────
+    // Constructor ----------------------------------------------------------
     private ProfileManager()
     {
         _saveDirectory = Application.persistentDataPath + "/Profiles/";
@@ -24,7 +24,7 @@ public class ProfileManager
         }
     }
 
-    // ── Save ────────────────────────────────────────────────────
+    // Save ----------------------------------------------------------
     public void SaveProfile()
     {
         if (currentProfile == null)
@@ -40,7 +40,7 @@ public class ProfileManager
         Debug.Log("[ProfileManager] Saved: " + filePath);
     }
 
-    // ── Load ────────────────────────────────────────────────────
+    // Load ----------------------------------------------------------
     public void LoadProfile(string profileName)
     {
         string filePath = _saveDirectory + profileName + ".json";
@@ -59,7 +59,7 @@ public class ProfileManager
         }
     }
 
-    // ── Get All ─────────────────────────────────────────────────
+    // Get All ----------------------------------------------------------
     public List<string> GetAvailableProfiles()
     {
         var names = new List<string>();
@@ -73,7 +73,7 @@ public class ProfileManager
         return names;
     }
 
-    // ── Delete ───────────────────────────────────────────────────
+    // Delete ----------------------------------------------------------
     public void DeleteProfile(string profileName)
     {
         string filePath = _saveDirectory + profileName + ".json";
@@ -89,7 +89,7 @@ public class ProfileManager
         }
     }
 
-    // ── Rename ──────────────────────────────────────────────────
+    // Rename ----------------------------------------------------------
     public void RenameProfile(string oldName, string newName)
     {
         string oldPath = _saveDirectory + oldName + ".json";
@@ -110,7 +110,7 @@ public class ProfileManager
         File.Move(oldPath, newPath);
         Debug.Log($"[ProfileManager] Renamed '{oldName}' → '{newName}'");
 
-        // Keep currentProfile.name in sync if we renamed the active one
+        // Keeping currentProfile.name in sync if we renamed the active one
         if (currentProfile?.profileName == oldName)
             currentProfile.profileName = newName;
     }
