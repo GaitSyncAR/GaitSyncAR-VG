@@ -122,10 +122,20 @@ public class GaitMetrics : MonoBehaviour
         validRightDurationsMs.Clear();
     }
 
-    private float GetMedian(List<float> list)
+   private float GetMedian(List<float> list)
     {
+        if (list.Count == 0) return 0f;
         var sorted = list.OrderBy(x => x).ToList();
-        return sorted[sorted.Count / 2];
+        int midIndex = sorted.Count / 2;
+        
+        // If even number of elements, average the two middle ones
+        if (sorted.Count % 2 == 0) 
+        {
+            return (sorted[midIndex - 1] + sorted[midIndex]) / 2f;
+        }
+        
+        // If odd, just return the middle one
+        return sorted[midIndex];
     }
 
     private float GetStandardDeviation(List<float> values)
@@ -150,7 +160,7 @@ public class GaitMetrics : MonoBehaviour
         // Use Medians to ignore any "weird but plausible" stumbling steps that could skew the average
         float medianL = GetMedian(validLeftDurationsMs);
         float medianR = GetMedian(validRightDurationsMs);
-
+        if (medianR == 0 || medianL == 0) return 1.0f;
         return medianL / medianR;
     }
 

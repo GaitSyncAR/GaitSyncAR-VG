@@ -5,7 +5,6 @@ using System;
 public class SessionPageController : PageController
 {
     // class fields
-    private readonly float TEMPORAL_SYMMETRY_TARGET = 1f;
     private readonly float STRIDE_VARIABILITY_STABLE_TRESHOLD = 0.33f; // 33% of max variability considered stable
     private readonly float MAX_STRIDE_VARIABILITY = 10f;
     private readonly float BPM_TOLERANCE = 5f; // BPM tolerance for optimal cadence
@@ -79,12 +78,32 @@ public class SessionPageController : PageController
     {
         var bar = Q<VisualElement>("PhaseOffsetFill");
         var ResultLabel = Q<Label>("PhaseOffsetResult");
+
+        // bar will start from the center point (0.5) and grow left or right based on offset direction
+        // has 0.5% padding from center
+        float centerPercent = 50f;
+        float offsetPercent = offset * 100f;
+        float paddingPercent = 0.45f;
+        if (offsetPercent <= 50)
+        {
+            float paddedOffset = offsetPercent + paddingPercent;
+            bar.style.width = Length.Percent(centerPercent - paddedOffset);
+            bar.style.left = Length.Percent(paddedOffset - paddingPercent);
+        }
+        else
+        {
+            float barWidthPercent = offsetPercent - centerPercent;
+            bar.style.left = Length.Percent(centerPercent + paddingPercent);
+            bar.style.width = Length.Percent(barWidthPercent - paddingPercent);
+        }
+
+        ResultLabel.text = $"{offset:F2}";
     }
 
     private void updateTitle(SessionData sessionData)
     {
         var titleLabel = Q<Label>("SessionTitle");
         int stabilityScore = Mathf.RoundToInt(sessionData.temporalSymmetryRatio * 10);
-        titleLabel.text = $"Session Report - {sessionData.sessionDate} | Stability: {stabilityScore}/10";
+        titleLabel.text = $"Session Report {sessionData.sessionDate} | Stability: {stabilityScore}/10 |";
     }
 }

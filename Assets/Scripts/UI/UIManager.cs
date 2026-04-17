@@ -56,8 +56,8 @@ public class UIManager : MonoBehaviour
             System.DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
             0.85f,
             44,
-            0f,
-            0.7f,
+            3.46f,
+            0.0f,
             60,
             new List<StepRecord>(),
             new List<StepRecord>()
