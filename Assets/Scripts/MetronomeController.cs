@@ -90,12 +90,12 @@ public class MetronomeController : MonoBehaviour
     {
         if (profile == null) return;
 
-        bpm                       =    profile.bpm;
+        bpm                    =    profile.bpm;
         transform.position     =    profile.metronomePosition;
         transform.localScale   =    profile.metronomeSize;
+        metronomeBar.localScale = new Vector3(metronomeBar.localScale.x, profile.metronomeBarScaleY, metronomeBar.localScale.z);
         
         SetColor(profile.metronomeColour);
-        //ApplyStretch(profile.metronomeBarScaleY);
     }
 
     public void SetColor(Color c)
@@ -118,21 +118,6 @@ public class MetronomeController : MonoBehaviour
         }
     }
 
-    public void ArmStretch(float stretchAmount)
-    {
-        if (metronomeArm != null)
-        {
-            float scaled = stretchAmount / 25f;
-            Vector3 armScale = metronomeArm.localScale;
-            armScale.z = Mathf.Max(0.1f, armScale.z + scaled);
-            metronomeArm.localScale = armScale;
-
-            Vector3 armPos = metronomeArm.localPosition;
-            armPos.y -= scaled * 0.5f;
-            metronomeArm.localPosition = armPos;
-        }
-    }
-
     private Vector3 ClampScale(Vector3 s)
     {
         if (s.x < 0.1f) s = Vector3.one * 0.1f;
@@ -144,5 +129,10 @@ public class MetronomeController : MonoBehaviour
         Vector3 newScale = Metronome.transform.localScale + Vector3.one * amount;
         newScale = ClampScale(newScale);
         Metronome.transform.localScale = newScale;
+    }
+
+    public void Move(Vector3 delta)
+    {
+        transform.position += delta;
     }
 }

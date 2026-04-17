@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 public static class UIEventBus
 {
     // -- Calibration -> Remote --
-    public static event Action<int> BPMChanged;
+    public static event Action<int>    BPMChanged;
     public static event Action<bool>   MetronomeRunningChanged;
 
     // -- Remote -> Calibration --

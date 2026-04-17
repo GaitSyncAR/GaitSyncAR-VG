@@ -56,7 +56,7 @@ public class CalibrationPageController : PageController
     {
         if (Metronome != null)
         {
-            Metronome.transform.position += delta;
+            Metronome.Move(delta);
             ProfileManager.Instance.currentProfile.metronomePosition = Metronome.transform.position;
         }
         PlayHaptic();
@@ -76,7 +76,7 @@ public class CalibrationPageController : PageController
         if (Metronome != null)
         {
             Metronome.ApplyStretch(amount);
-            Metronome.ArmStretch(amount);
+            ProfileManager.Instance.currentProfile.metronomeBarScaleY = Metronome.metronomeBar.localScale.y;
         }
         PlayHaptic();
     }
