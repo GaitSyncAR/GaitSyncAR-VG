@@ -5,13 +5,15 @@ using UnityEngine.UIElements;
 public abstract class PageController : PageInterface
 {
     protected UIDocument    Document  { get; private set; }
-    protected VisualElement Root     { get; private set; }
-    protected bool         IsActive { get; private set; }
+    protected VisualElement Root { get; private set; }
+    public VisualElement PageRoot     { get; private set; }
+    public bool         IsActive { get; private set; }
 
     public PageController(UIDocument doc, VisualElement pageRoot = null)
     {
         Document = doc;
-        Root     = doc.rootVisualElement;
+        Root = doc.rootVisualElement;
+        PageRoot = pageRoot;
 
         // adding ourselves to page map for easy access later
         UIManager uiManager = Object.FindFirstObjectByType<UIManager>();

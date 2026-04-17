@@ -5,9 +5,30 @@ using System.Linq;
 
 public class GaitMetrics : MonoBehaviour
 {
+    // Singleton instance for global access
+    public static GaitMetrics Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this) 
+        { 
+            Destroy(this.gameObject); 
+            return;
+        } 
+
+        Instance = this; 
+        DontDestroyOnLoad(this.gameObject);
+
+        // saving session on metronome stop
+        UIEventBus.MetronomeRunningChanged += (running) => {
+            if (!running) SaveSession();
+        };
+    }
+
     // --- Data Storage ---
     public List<StepRecord> LeftStepHistory = new List<StepRecord>();
     public List<StepRecord> RightStepHistory = new List<StepRecord>();
+    public SessionData latestSessionData { get; private set; }
 
     // These hold the calculated Deltas in milliseconds for valid steps
     private List<float> validLeftDurationsMs = new List<float>();
@@ -58,7 +79,7 @@ public class GaitMetrics : MonoBehaviour
 
     public void SaveSession()
     {
-        SessionData data = new SessionData(
+        latestSessionData = new SessionData(
             System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm"),
             GetTemporalSymmetryRatio(),
             GetCadence(),
@@ -69,11 +90,14 @@ public class GaitMetrics : MonoBehaviour
             RightStepHistory
         );
 
-        string json = JsonUtility.ToJson(data, true);
-        string filePath = Path.Combine(Application.persistentDataPath, $"Session_{data.sessionDate}.json");
+        string json = JsonUtility.ToJson(latestSessionData, true);
+        string filePath = Path.Combine(Application.persistentDataPath, $"Session_{latestSessionData.sessionDate}_{latestSessionData.sessionDate}.json");
         
         File.WriteAllText(filePath, json);
         Debug.Log($"Session Saved to: {filePath}");
+
+        // Emit event for UI update
+        UIEventBus.EmitSessionSaved(latestSessionData);
     }
 
     private long GetContinuousTimestamp(bool isRightFoot, long rawHardwareTimeUs)

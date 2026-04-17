@@ -7,11 +7,13 @@ public static class UIEventBus
     public static event Action<int>    BPMChanged;
     public static event Action<bool>   MetronomeRunningChanged;
     public static event Action<Color>  ColorChanged;
+    public static event Action<SessionData> SessionSaved;
 
     // -- Invoke helpers --
     public static void EmitBPM(float value)         => BPMChanged?.Invoke(Mathf.RoundToInt(value));
     public static void EmitRunning(bool running)    => MetronomeRunningChanged?.Invoke(running);
     public static void EmitProfileApplied(string n) => ProfileApplied?.Invoke(n);
+    public static void EmitSessionSaved(SessionData n) => SessionSaved?.Invoke(n);   
     public static void EmitColor(Color c)           => ColorChanged?.Invoke(c);
 
     public static void EmitProfileListChanged()     => ProfileListChanged?.Invoke();

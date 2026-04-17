@@ -66,6 +66,7 @@ public class UIManager : MonoBehaviour
 
         BuildNavigation();
 
+        UIEventBus.SessionSaved += ShowSessionSummary;
         BLEManager.OnBatteryLevelReceived += OnBatteryReceived;
         BLEManager.OnDeviceDisconnected   += OnDisconnected;
         BLEManager.OnDeviceReconnected    += OnReconnected;
@@ -113,14 +114,14 @@ public class UIManager : MonoBehaviour
     }
     private void BuildNavigation()
     {
-        _root.Q<Button>("ToSettings").RegisterCallback<ClickEvent>(_ => ShowPage(_root.Q<VisualElement>("CalibrationPage")));
-        _root.Q<Button>("ToTemplates").RegisterCallback<ClickEvent>(_ => ShowPage(_root.Q<VisualElement>("TemplatesPage")));
+        _root.Q<Button>("ToSettings").RegisterCallback<ClickEvent>(_ => ShowPage(_calibrationCtrl.PageRoot));
+        _root.Q<Button>("ToTemplates").RegisterCallback<ClickEvent>(_ => ShowPage(_templatesCtrl.PageRoot));
 
         foreach (var btn in _root.Query<Button>("BackBtn").ToList())
-            btn.RegisterCallback<ClickEvent>(_ => ShowPage(_root.Q<VisualElement>("RemotePage")));
+            btn.RegisterCallback<ClickEvent>(_ => ShowPage(_remoteCtrl.PageRoot));
 
         // UI start
-        ShowPage(_root.Q<VisualElement>("remotePage"));
+        ShowPage(_remoteCtrl.PageRoot);
     }
 
     private void ShowPage(VisualElement page)
@@ -148,6 +149,15 @@ public class UIManager : MonoBehaviour
             newCtrl.OnPageShow();
         }
     }
+    // ----------------------------------------------------------
+    // Session Popup
+    // ----------------------------------------------------------
+    public void ShowSessionSummary(SessionData sessionData)
+    {
+        _sessionCtrl.SetSessionData(sessionData);
+        ShowPage(_sessionCtrl.PageRoot);
+    }
+    
 
     // ----------------------------------------------------------
     // BLE
