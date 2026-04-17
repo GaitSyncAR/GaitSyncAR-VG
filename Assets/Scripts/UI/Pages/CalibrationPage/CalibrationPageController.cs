@@ -13,14 +13,13 @@ public class CalibrationPageController : PageController
     private VisualElement _colourControls;
 
     // --- Initialising ---
-    public void InitWithRefs(
+    public CalibrationPageController(
         UIDocument doc,
+        VisualElement pageRoot,
         MetronomeController metronomeController,
         float movementStep,
-        float scaleStep)
+        float scaleStep) : base(doc, pageRoot)
     {
-        base.Initialize(doc);
-
         Metronome    = metronomeController;
         MovementStep = movementStep;
         ScaleStep    = scaleStep;

@@ -10,9 +10,8 @@ public class RemotePageController : PageController
 
     private int _currentBpm;
 
-    public void Initialize(UIDocument doc, MetronomeController metronome)
+    public RemotePageController(UIDocument doc, VisualElement pageRoot, MetronomeController metronome) : base(doc, pageRoot)
     {
-        base.Initialize(doc);
         _metronome = metronome;
 
         _bpmLabel     = Q<Label>("BPM-lbl");

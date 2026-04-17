@@ -20,14 +20,13 @@ public class TemplatesPageController : PageController
     //  Initialisation
     // ----------------------------------------------------------
 
-    public void Initialize(
+    public TemplatesPageController(
         UIDocument        doc,
+        VisualElement pageRoot,
         VisualTreeAsset   rowTemplate,
         VisualTreeAsset   popupTemplate,
-        VisualTreeAsset   yesNoPopupTemplate)
+        VisualTreeAsset   yesNoPopupTemplate) : base(doc, pageRoot)
     {
-        base.Initialize(doc);
-
         _rowTemplate        = rowTemplate;
         _popupTemplate      = popupTemplate;
         _yesNoPopupTemplate = yesNoPopupTemplate;

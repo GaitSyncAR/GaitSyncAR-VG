@@ -7,9 +7,8 @@ public class SessionPageController : PageController
     // class fields
     // ...
 
-    public override void Initialize(UIDocument doc)
+    public SessionPageController(UIDocument doc, VisualElement pageRoot) : base(doc, pageRoot)
     {
-        base.Initialize(doc);
     }
 
     public override void OnPageShow()

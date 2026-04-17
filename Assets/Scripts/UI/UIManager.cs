@@ -46,15 +46,10 @@ public class UIManager : MonoBehaviour
         _root = uiDocument.rootVisualElement;
         LoadAndApplyProfile();
 
-        _remoteCtrl      = new RemotePageController();
-        _templatesCtrl  = new TemplatesPageController();
-        _calibrationCtrl = new CalibrationPageController();
-        _sessionCtrl     = new SessionPageController();
-
-        _remoteCtrl.Initialize(uiDocument, metronome);
-        _templatesCtrl.Initialize(uiDocument, profileRowTemplate, popupTemplate, yesNoPopupTemplate);
-        _calibrationCtrl.InitWithRefs(uiDocument, metronome, movementStep, scaleStep);
-        _sessionCtrl.Initialize(uiDocument);
+        _remoteCtrl      = new RemotePageController(uiDocument, _root.Q<VisualElement>("RemotePage"), metronome);
+        _templatesCtrl   = new TemplatesPageController(uiDocument,  _root.Q<VisualElement>("TemplatesPage"), profileRowTemplate, popupTemplate, yesNoPopupTemplate);
+        _calibrationCtrl = new CalibrationPageController(uiDocument, _root.Q<VisualElement>("CalibrationPage"), metronome, movementStep, scaleStep);
+        _sessionCtrl     = new SessionPageController(uiDocument, _root.Q<VisualElement>("SessionReportPage"));
 
         BuildNavigation();
 
@@ -94,26 +89,25 @@ public class UIManager : MonoBehaviour
     // ----------------------------------------------------------
     // Navigation
     // ----------------------------------------------------------
+    public void RegisterPage(VisualElement pageElement, PageInterface pageCtrl)
+    {
+        if (pageCtrl == null) return;
+
+        if (!_pageMap.ContainsKey(pageElement))
+        {
+            _pageMap.Add(pageElement, pageCtrl);
+        }
+    }
     private void BuildNavigation()
     {
-        var remote    = _root.Q<VisualElement>("RemotePage");
-        var calib     = _root.Q<VisualElement>("CalibrationPage");
-        var templates = _root.Q<VisualElement>("TemplatesPage");
-        var session   = _root.Q<VisualElement>("SessionReportPage");
-
-        _pageMap.Add(remote, _remoteCtrl);
-        _pageMap.Add(calib, _calibrationCtrl);
-        _pageMap.Add(templates, _templatesCtrl);
-        _pageMap.Add(session, _sessionCtrl);
-
-        _root.Q<Button>("ToSettings").RegisterCallback<ClickEvent>(_ => ShowPage(calib));
-        _root.Q<Button>("ToTemplates").RegisterCallback<ClickEvent>(_ => ShowPage(templates));
+        _root.Q<Button>("ToSettings").RegisterCallback<ClickEvent>(_ => ShowPage(_root.Q<VisualElement>("CalibrationPage")));
+        _root.Q<Button>("ToTemplates").RegisterCallback<ClickEvent>(_ => ShowPage(_root.Q<VisualElement>("TemplatesPage")));
 
         foreach (var btn in _root.Query<Button>("BackBtn").ToList())
-            btn.RegisterCallback<ClickEvent>(_ => ShowPage(remote));
+            btn.RegisterCallback<ClickEvent>(_ => ShowPage(_root.Q<VisualElement>("RemotePage")));
 
         // UI start
-        // ShowPage(remote);
+        ShowPage(_root.Q<VisualElement>("remotePage"));
     }
 
     private void ShowPage(VisualElement page)

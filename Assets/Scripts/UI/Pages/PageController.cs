@@ -8,10 +8,16 @@ public abstract class PageController : PageInterface
     protected VisualElement Root     { get; private set; }
     protected bool         IsActive { get; private set; }
 
-    public virtual void Initialize(UIDocument doc)
+    public PageController(UIDocument doc, VisualElement pageRoot = null)
     {
         Document = doc;
         Root     = doc.rootVisualElement;
+
+        // adding ourselves to page map for easy access later
+        UIManager uiManager = Object.FindObjectOfType<UIManager>();
+        if (uiManager != null)        {
+            uiManager.RegisterPage(pageRoot, this);
+        }
     }
 
     public virtual void OnPageShow() 
