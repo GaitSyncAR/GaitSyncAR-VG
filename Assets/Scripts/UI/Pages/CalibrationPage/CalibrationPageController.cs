@@ -12,6 +12,11 @@ public class CalibrationPageController : PageController
     private VisualElement _shapeControls;
     private VisualElement _colourControls;
 
+    // public tab controllers
+    public PositionTabController _positionTabController;
+    public ShapeTabController _shapeTabController;
+    public ColourTabController _colourTabController;
+
     // --- Initialising ---
     public CalibrationPageController(
         UIDocument doc,
@@ -32,9 +37,10 @@ public class CalibrationPageController : PageController
         Q<Button>("ShapeBtn").clicked += () => ShowTab("shape");
         Q<Button>("ColourBtn").clicked+= () => ShowTab("col");
 
-        new PositionTabController().Initialize(this, _positionControls);
-        new ShapeTabController().Initialize(this, _shapeControls);
-        new ColourTabController().Initialize(this, _colourControls, Metronome);
+        // initialising tab controllers
+        _positionTabController = new PositionTabController(this, _positionControls, metronomeController);
+        _shapeTabController = new ShapeTabController(this, _shapeControls, metronomeController);
+        _colourTabController = new ColourTabController(this, _colourControls, metronomeController);
 
         ShowTab("pos");
     }
@@ -44,39 +50,6 @@ public class CalibrationPageController : PageController
         _positionControls.style.display = tab == "pos"   ? DisplayStyle.Flex : DisplayStyle.None;
         _shapeControls.style.display    = tab == "shape" ? DisplayStyle.Flex : DisplayStyle.None;
         _colourControls.style.display   = tab == "col"   ? DisplayStyle.Flex : DisplayStyle.None;
-        PlayHaptic();
-    }
-
-    // ----------------------------------------------------------
-    //  Methods called by Tabs
-    // ----------------------------------------------------------
-
-    public void Move(Vector3 delta)
-    {
-        if (Metronome != null)
-        {
-            Metronome.Move(delta);
-            ProfileManager.Instance.currentProfile.metronomePosition = Metronome.transform.position;
-        }
-        PlayHaptic();
-    }
-
-    public void ScaleUniform(float amount)
-    {
-        if (Metronome == null) return;
-        Metronome.UniformScale(amount);
-        ProfileManager.Instance.currentProfile.metronomeSize = Metronome.transform.localScale;
-
-        PlayHaptic();
-    }
-
-    public void ScaleStretch(float amount)
-    {
-        if (Metronome != null)
-        {
-            Metronome.ApplyStretch(amount);
-            ProfileManager.Instance.currentProfile.metronomeBarScaleY = Metronome.metronomeBar.localScale.y;
-        }
         PlayHaptic();
     }
 

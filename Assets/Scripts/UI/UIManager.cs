@@ -186,16 +186,8 @@ public class UIManager : MonoBehaviour
         }
 
         UserProfile profile = ProfileManager.Instance.currentProfile;
-        Color c = profile.metronomeColour;
-            var tab = _root.Q<VisualElement>("ColourControls");
-            if (tab != null)
-            {
-                tab.Q("Red_Slider").Q<SliderInt>().value   = (int)(c.r * 255);
-                tab.Q("Green_Slider").Q<SliderInt>().value = (int)(c.g * 255);
-                tab.Q("Blue_Slider").Q<SliderInt>().value  = (int)(c.b * 255);
-            }
-
         UIEventBus.EmitBPM(profile.bpm);
+        UIEventBus.EmitColor(profile.metronomeColour);
         metronome.ApplyProfile(profile);
         Debug.Log("Profile loaded and applied.");
     }

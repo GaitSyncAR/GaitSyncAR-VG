@@ -14,7 +14,7 @@ public abstract class PageController : PageInterface
         Root     = doc.rootVisualElement;
 
         // adding ourselves to page map for easy access later
-        UIManager uiManager = Object.FindObjectOfType<UIManager>();
+        UIManager uiManager = Object.FindFirstObjectByType<UIManager>();
         if (uiManager != null)        {
             uiManager.RegisterPage(pageRoot, this);
         }
@@ -33,7 +33,7 @@ public abstract class PageController : PageInterface
     protected T Q<T>(string name) where T : VisualElement
         => Root.Q<T>(name);
 
-    protected void PlayHaptic()
+    public void PlayHaptic()
     {
         #if UNITY_ANDROID || UNITY_IOS
             Handheld.Vibrate();
