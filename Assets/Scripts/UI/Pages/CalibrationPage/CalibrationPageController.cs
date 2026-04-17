@@ -4,7 +4,7 @@ using UnityEngine.UIElements;
 public class CalibrationPageController : PageController
 {
     // --- Exposing to tab controllers ---
-    public MetronomeController Metronome { get; private set; }
+    public MetronomeController Metronome { get; set; }
     public float MovementStep { get; set; } = 0.5f;
     public float ScaleStep    { get; set; } = 0.1f;
 
@@ -35,7 +35,7 @@ public class CalibrationPageController : PageController
 
         new PositionTabController().Initialize(this, _positionControls);
         new ShapeTabController().Initialize(this, _shapeControls);
-        new ColourTabController().Initialize(this, _colourControls, Metronome.targetMaterial);
+        new ColourTabController().Initialize(this, _colourControls, Metronome);
 
         ShowTab("pos");
     }

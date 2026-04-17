@@ -135,6 +135,10 @@ PrefabInstance:
       propertyPath: isRunning
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3820462173310049436, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4380511990860253802, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
       propertyPath: m_LocalScale.x
       value: 127.8745
@@ -207,10 +211,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: metronome3
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 3820462173310049436, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8864240077641084682, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 871263448}
+    - targetCorrespondingSourceObject: {fileID: 8864240077641084682, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 871263447}
     - targetCorrespondingSourceObject: {fileID: 7195838763430341477, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1587569970}
@@ -598,88 +609,44 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &887113179 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 5052447915363025023, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
+--- !u!1 &871263446 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8864240077641084682, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
   m_PrefabInstance: {fileID: 221616749}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1375737368
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1375737370}
-  - component: {fileID: 1375737371}
-  - component: {fileID: 1375737372}
-  m_Layer: 0
-  m_Name: BLE_Manager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1375737370
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1375737368}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.09737, y: 0, z: 31.71852}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1375737371
+--- !u!114 &871263447
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1375737368}
+  m_GameObject: {fileID: 871263446}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f3603472d376a9543aeca7729513b86b, type: 3}
+  m_Script: {fileID: 11500000, guid: 2526a798d260ade4e940d057f41d02f8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BLEManager
---- !u!114 &1375737372
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1375737368}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6003d6b1796ebf745a61d8e0e1855089, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::GaitMetrics
-  LeftStepHistory: []
-  RightStepHistory: []
---- !u!1 &1587569967 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7195838763430341477, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
-  m_PrefabInstance: {fileID: 221616749}
-  m_PrefabAsset: {fileID: 0}
---- !u!82 &1587569970
+  m_EditorClassIdentifier: Assembly-CSharp::MetronomeController
+  metronomeBar: {fileID: 732765211}
+  metronomeArm: {fileID: 1587569973}
+  targetMaterial: {fileID: 2100000, guid: 564e6cadbc3efd94983c28b403e71369, type: 2}
+  bpm: 120
+  isRunning: 0
+  maxAngle: 50
+  tickSound: {fileID: 8300000, guid: 3aac27682951bda49b4e700f56fe7038, type: 3}
+  tickVolume: 1
+--- !u!82 &871263448
 AudioSource:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1587569967}
+  m_GameObject: {fileID: 871263446}
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 3aac27682951bda49b4e700f56fe7038, type: 3}
-  m_PlayOnAwake: 1
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
   Loop: 0
@@ -764,17 +731,177 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!114 &1587569972 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3820462173310049436, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
+--- !u!4 &887113179 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5052447915363025023, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
   m_PrefabInstance: {fileID: 221616749}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1375737368
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1375737370}
+  - component: {fileID: 1375737371}
+  - component: {fileID: 1375737372}
+  m_Layer: 0
+  m_Name: BLE_Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1375737370
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1375737368}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.09737, y: 0, z: 31.71852}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1375737371
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1375737368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3603472d376a9543aeca7729513b86b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BLEManager
+--- !u!114 &1375737372
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1375737368}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6003d6b1796ebf745a61d8e0e1855089, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GaitMetrics
+  LeftStepHistory: []
+  RightStepHistory: []
+--- !u!1 &1587569967 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7195838763430341477, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
+  m_PrefabInstance: {fileID: 221616749}
+  m_PrefabAsset: {fileID: 0}
+--- !u!82 &1587569970
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1587569967}
   m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b9f796619024afa46a922b6a2e0d2355, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MetronomeArm
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 8300000, guid: 3aac27682951bda49b4e700f56fe7038, type: 3}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!4 &1587569973 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3888199139012755499, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
+  m_PrefabInstance: {fileID: 221616749}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1779027551
 GameObject:
   m_ObjectHideFlags: 0
@@ -999,7 +1126,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISettingsControllerV3
   uiDocument: {fileID: 773190230}
-  metronomeArm: {fileID: 1587569972}
+  metronomeArm: {fileID: 0}
   metronomeRenderer: {fileID: 594930405}
   metronomeBar: {fileID: 732765211}
   metronomeArmVisuals: {fileID: 887113179}
@@ -1013,6 +1140,7 @@ MonoBehaviour:
   yesNoPopupTemplate: {fileID: 9197481963319205126, guid: 32d2a59a8c713d046a996aecd1ce181d, type: 3}
   ankleSensorConnectedIcon: {fileID: 2800000, guid: 5442679c8673e2346887717ef6b4ac52, type: 3}
   ankleSensorDisconnectedIcon: {fileID: 2800000, guid: 78017c93c2050a245a166dff306a7262, type: 3}
+  _selectedTemplateName: 
 --- !u!114 &1964602101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1043,12 +1171,7 @@ MonoBehaviour:
   profileRowTemplate: {fileID: 9197481963319205126, guid: 9c543f45019907d4ba32501e5297abda, type: 3}
   popupTemplate: {fileID: 9197481963319205126, guid: 988c2aa3fdce8484198c9b01b0e7ac6a, type: 3}
   yesNoPopupTemplate: {fileID: 9197481963319205126, guid: 32d2a59a8c713d046a996aecd1ce181d, type: 3}
-  metronomeArm: {fileID: 1587569972}
-  metronomeRenderer: {fileID: 594930405}
-  metronomeBar: {fileID: 732765211}
-  metronomeArmVisuals: {fileID: 887113179}
-  targetMaterial: {fileID: 2100000, guid: 564e6cadbc3efd94983c28b403e71369, type: 2}
-  metronomeObject: {fileID: 687329261}
+  metronome: {fileID: 871263447}
   metronomePreviewTexture: {fileID: 8400000, guid: b0281ebb197c54f47a04371b7a65148a, type: 2}
   movementStep: 0.5
   scaleStep: 0.1

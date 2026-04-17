@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 // Every controller inherits from this. Handles common boilerplate.
-public abstract class PageController
+public abstract class PageController : PageInterface
 {
     protected UIDocument    Document  { get; private set; }
     protected VisualElement Root     { get; private set; }
@@ -14,9 +14,15 @@ public abstract class PageController
         Root     = doc.rootVisualElement;
     }
 
-    public virtual void OnPageShow() { }
+    public virtual void OnPageShow() 
+    { 
+        IsActive = true; 
+    }
 
-    public virtual void OnPageHide() { }
+    public virtual void OnPageHide() 
+    { 
+        IsActive = false; 
+    }
 
     protected T Q<T>(string name) where T : VisualElement
         => Root.Q<T>(name);

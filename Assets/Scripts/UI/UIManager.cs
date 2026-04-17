@@ -26,11 +26,13 @@ public class UIManager : MonoBehaviour
     private RemotePageController       _remoteCtrl;
     private TemplatesPageController   _templatesCtrl;
     private CalibrationPageController _calibrationCtrl;
+    private SessionPageController     _sessionCtrl;
 
     // -- Navigation --
     private VisualElement _root;
     private VisualElement _currentPage;
-    private readonly List<VisualElement> _pages = new();
+    private VisualElement _lastPage;
+    private readonly Dictionary<VisualElement, PageInterface> _pageMap = new();
 
     void Awake()
     {
@@ -47,10 +49,12 @@ public class UIManager : MonoBehaviour
         _remoteCtrl      = new RemotePageController();
         _templatesCtrl  = new TemplatesPageController();
         _calibrationCtrl = new CalibrationPageController();
+        _sessionCtrl     = new SessionPageController();
 
         _remoteCtrl.Initialize(uiDocument, metronome);
         _templatesCtrl.Initialize(uiDocument, profileRowTemplate, popupTemplate, yesNoPopupTemplate);
         _calibrationCtrl.InitWithRefs(uiDocument, metronome, movementStep, scaleStep);
+        _sessionCtrl.Initialize(uiDocument);
 
         BuildNavigation();
 
@@ -95,33 +99,47 @@ public class UIManager : MonoBehaviour
         var remote    = _root.Q<VisualElement>("RemotePage");
         var calib     = _root.Q<VisualElement>("CalibrationPage");
         var templates = _root.Q<VisualElement>("TemplatesPage");
+        var session   = _root.Q<VisualElement>("SessionReportPage");
 
-        _pages.Add(remote);
-        _pages.Add(calib);
-        _pages.Add(templates);
+        _pageMap.Add(remote, _remoteCtrl);
+        _pageMap.Add(calib, _calibrationCtrl);
+        _pageMap.Add(templates, _templatesCtrl);
+        _pageMap.Add(session, _sessionCtrl);
 
         _root.Q<Button>("ToSettings").RegisterCallback<ClickEvent>(_ => ShowPage(calib));
         _root.Q<Button>("ToTemplates").RegisterCallback<ClickEvent>(_ => ShowPage(templates));
 
         foreach (var btn in _root.Query<Button>("BackBtn").ToList())
             btn.RegisterCallback<ClickEvent>(_ => ShowPage(remote));
+
+        // UI start
+        // ShowPage(remote);
     }
 
     private void ShowPage(VisualElement page)
     {
         if (page == null || page == _currentPage) return;
+        // closing last page
+        if (_currentPage != null && _pageMap.TryGetValue(_currentPage, out var oldCtrl))
+        {
+            oldCtrl.OnPageHide();
+        }
 
-        // ── Page lifecycle ──
-        if (_currentPage?.name == "CalibrationPage")
-            _calibrationCtrl.OnPageHide();
-
-        foreach (var p in _pages)
-            p.style.display = (p == page) ? DisplayStyle.Flex : DisplayStyle.None;
-
-        if (page.name == "RemotePage")
-            _remoteCtrl.OnPageShow();
-
+        // Update tracking
+        _lastPage = _currentPage;
         _currentPage = page;
+
+        // Toggle Visibility
+        foreach (var pageElement in _pageMap.Keys)
+        {
+            pageElement.style.display = (pageElement == page) ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        // Entry logic for new page
+        if (_pageMap.TryGetValue(page, out var newCtrl))
+        {
+            newCtrl.OnPageShow();
+        }
     }
 
     // ----------------------------------------------------------
