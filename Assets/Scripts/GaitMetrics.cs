@@ -5,33 +5,6 @@ using System.Linq;
 
 public class GaitMetrics : MonoBehaviour
 {
-    [System.Serializable]
-    public class SessionSaveData
-    {
-        public string sessionDate;
-        public float TemporalSymmetryRatio;
-        public float cadence;
-        public float strideTimeVariability;
-        public float temporalPhaseOffset;
-        
-        // Raw Data Logs
-        public List<GaitMetrics.StepRecord> leftHistory;
-        public List<GaitMetrics.StepRecord> rightHistory;
-    }
-
-    [System.Serializable]
-    public struct StepRecord
-    {
-        public bool isRightFoot;
-        public long timestamp; // Microseconds from hardware
-
-        public StepRecord(bool right, long time)
-        {
-            isRightFoot = right;
-            timestamp = time;
-        }
-    }
-
     // --- Data Storage ---
     public List<StepRecord> LeftStepHistory = new List<StepRecord>();
     public List<StepRecord> RightStepHistory = new List<StepRecord>();
@@ -41,14 +14,14 @@ public class GaitMetrics : MonoBehaviour
     private List<float> validRightDurationsMs = new List<float>();
 
     // Tracking for stitched delta calculation
-    private long lastLeftTimestamp = 0;
-    private long lastRightTimestamp = 0;
+    private long lastLeftTimestampUs = 0;
+    private long lastRightTimestampUs = 0;
     
     // Tracking for hardware continuity
-    private long leftSessionOffset = 0;
-    private long rightSessionOffset = 0;
-    private long lastRawLeft = 0;
-    private long lastRawRight = 0;
+    private long leftSessionOffsetUs = 0;
+    private long rightSessionOffsetUs = 0;
+    private long lastRawLeftUs = 0;
+    private long lastRawRightUs = 0;
 
     private void OnEnable() => BLEManager.OnStepReceived += HandleStepEvent;
     private void OnDisable() => BLEManager.OnStepReceived -= HandleStepEvent;
@@ -64,7 +37,7 @@ public class GaitMetrics : MonoBehaviour
         else LeftStepHistory.Add(newStep);
 
         // Plausible Bounds for Analytics
-        long previous = isRightFoot ? lastRightTimestamp : lastLeftTimestamp;
+        long previous = isRightFoot ? lastRightTimestampUs : lastLeftTimestampUs;
 
         if (previous != 0)
         {
@@ -79,17 +52,22 @@ public class GaitMetrics : MonoBehaviour
         }
 
         // Updating the continuous anchor for the next step's delta
-        if (isRightFoot) lastRightTimestamp = continuousTime;
-        else lastLeftTimestamp = continuousTime;
+        if (isRightFoot) lastRightTimestampUs = continuousTime;
+        else lastLeftTimestampUs = continuousTime;
     }
 
     public void SaveSession()
     {
-        SessionSaveData data = new SessionSaveData();
-        data.sessionDate = System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm");
-        data.TemporalSymmetryRatio = GetTemporalSymmetryRatio();
-        data.leftHistory = LeftStepHistory;
-        data.rightHistory = RightStepHistory;
+        SessionData data = new SessionData(
+            System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm"),
+            GetTemporalSymmetryRatio(),
+            GetCadence(),
+            GetStrideTimeVariability(),
+            GetTemporalPhaseOffset(),
+            ProfileManager.Instance.currentProfile.bpm,
+            LeftStepHistory,
+            RightStepHistory
+        );
 
         string json = JsonUtility.ToJson(data, true);
         string filePath = Path.Combine(Application.persistentDataPath, $"Session_{data.sessionDate}.json");
@@ -100,8 +78,8 @@ public class GaitMetrics : MonoBehaviour
 
     private long GetContinuousTimestamp(bool isRightFoot, long rawHardwareTimeUs)
     {
-        long lastRaw = isRightFoot ? lastRawRight : lastRawLeft;
-        long currentOffset = isRightFoot ? rightSessionOffset : leftSessionOffset;
+        long lastRaw = isRightFoot ? lastRawRightUs : lastRawLeftUs;
+        long currentOffset = isRightFoot ? rightSessionOffsetUs : leftSessionOffsetUs;
 
         // Get current absolute phone time in microseconds
         long currentPhoneTimeUs = System.DateTime.UtcNow.Ticks / 10;
@@ -112,8 +90,8 @@ public class GaitMetrics : MonoBehaviour
             // Calculate the exact offset needed to map the sensor's 0-time to the phone's current time.
             long newOffset = currentPhoneTimeUs - rawHardwareTimeUs;
 
-            if (isRightFoot) rightSessionOffset = newOffset;
-            else leftSessionOffset = newOffset;
+            if (isRightFoot) rightSessionOffsetUs = newOffset;
+            else leftSessionOffsetUs = newOffset;
 
             if (lastRaw != 0) 
             {
@@ -122,21 +100,21 @@ public class GaitMetrics : MonoBehaviour
         }
 
         // Update the 'raw' tracker
-        if (isRightFoot) lastRawRight = rawHardwareTimeUs;
-        else lastRawLeft = rawHardwareTimeUs;
+        if (isRightFoot) lastRawRightUs = rawHardwareTimeUs;
+        else lastRawLeftUs = rawHardwareTimeUs;
 
         // True Time = Sensor Time + (Phone Time - Sensor Time)
-        return rawHardwareTimeUs + (isRightFoot ? rightSessionOffset : leftSessionOffset);
+        return rawHardwareTimeUs + (isRightFoot ? rightSessionOffsetUs : leftSessionOffsetUs);
     }
 
     public void StartNewSession()
     {
-        leftSessionOffset = 0;
-        rightSessionOffset = 0;
-        lastRawLeft = 0;
-        lastRawRight = 0;
-        lastLeftTimestamp = 0;
-        lastRightTimestamp = 0;
+        leftSessionOffsetUs = 0;
+        rightSessionOffsetUs = 0;
+        lastRawLeftUs = 0;
+        lastRawRightUs = 0;
+        lastLeftTimestampUs = 0;
+        lastRightTimestampUs = 0;
         
         LeftStepHistory.Clear();
         RightStepHistory.Clear();
@@ -220,18 +198,18 @@ public class GaitMetrics : MonoBehaviour
         // For every Left step, find the Right step immediately before and after it
         foreach (var leftStep in LeftStepHistory)
         {
-            long tL = leftStep.timestamp;
+            long tL = leftStep.timestampUs;
 
             // Find the Right strike immediately BEFORE this Left strike
-            var prevRight = RightStepHistory.LastOrDefault(r => r.timestamp < tL);
+            var prevRight = RightStepHistory.LastOrDefault(r => r.timestampUs < tL);
             // Find the Right strike immediately AFTER this Left strike
-            var nextRight = RightStepHistory.FirstOrDefault(r => r.timestamp > tL);
+            var nextRight = RightStepHistory.FirstOrDefault(r => r.timestampUs > tL);
 
             // If we found a valid bracket
-            if (prevRight.timestamp != 0 && nextRight.timestamp != 0)
+            if (prevRight.timestampUs != 0 && nextRight.timestampUs != 0)
             {
-                long tR1 = prevRight.timestamp;
-                long tR2 = nextRight.timestamp;
+                long tR1 = prevRight.timestampUs;
+                long tR2 = nextRight.timestampUs;
 
                 long rightStrideDuration = tR2 - tR1;
                 long offsetDuration = tL - tR1;

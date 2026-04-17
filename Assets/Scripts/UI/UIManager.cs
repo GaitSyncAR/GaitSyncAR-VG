@@ -51,6 +51,19 @@ public class UIManager : MonoBehaviour
         _calibrationCtrl = new CalibrationPageController(uiDocument, _root.Q<VisualElement>("CalibrationPage"), metronome, movementStep, scaleStep);
         _sessionCtrl     = new SessionPageController(uiDocument, _root.Q<VisualElement>("SessionReportPage"));
 
+        // testing session with mock session data
+        SessionData mockData = new SessionData(
+            System.DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
+            0.85f,
+            44,
+            2f,
+            0.7f,
+            60,
+            new List<StepRecord>(),
+            new List<StepRecord>()
+        );
+        _sessionCtrl.SetSessionData(mockData);
+
         BuildNavigation();
 
         BLEManager.OnBatteryLevelReceived += OnBatteryReceived;
