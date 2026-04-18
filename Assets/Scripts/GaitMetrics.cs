@@ -21,9 +21,10 @@ public class GaitMetrics : MonoBehaviour
         Instance = this; 
         DontDestroyOnLoad(this.gameObject);
 
-        // saving session on metronome stop
+        // saving session on metronome stop, otherwise reset
         UIEventBus.MetronomeRunningChanged += (running) => {
             if (!running) SaveSession();
+            else StartNewSession();
         };
     }
 
@@ -33,8 +34,8 @@ public class GaitMetrics : MonoBehaviour
     public SessionData latestSessionData { get; private set; }
 
     // These hold the calculated Deltas in milliseconds for valid steps
-    private List<float> validLeftDurationsMs = new List<float>();
-    private List<float> validRightDurationsMs = new List<float>();
+    private List<float> validLeftStrideMs = new List<float>();
+    private List<float> validRightStrideMs = new List<float>();
 
     // Tracking for stitched delta calculation
     private long lastLeftTimestampUs = 0;
@@ -45,6 +46,10 @@ public class GaitMetrics : MonoBehaviour
     private long rightSessionOffsetUs = 0;
     private long lastRawLeftUs = 0;
     private long lastRawRightUs = 0;
+
+    // settings
+    private const float MIN_STRIDE_MS = 300f;
+    private const float MAX_STRIDE_MS = 2500f;
 
     private void OnEnable() => BLEManager.OnStepReceived += HandleStepEvent;
     private void OnDisable() => BLEManager.OnStepReceived -= HandleStepEvent;
@@ -66,10 +71,10 @@ public class GaitMetrics : MonoBehaviour
         {
             float deltaMs = (continuousTime - previous) / 1000f;
 
-            if (deltaMs >= 300f && deltaMs <= 1500f)
+            if (deltaMs >= MIN_STRIDE_MS && deltaMs <= MAX_STRIDE_MS)
             {
-                if (isRightFoot) validRightDurationsMs.Add(deltaMs);
-                else validLeftDurationsMs.Add(deltaMs);
+                if (isRightFoot) validRightStrideMs.Add(deltaMs);
+                else validLeftStrideMs.Add(deltaMs);
                 Debug.Log($"Valid step detected for {(isRightFoot ? "Right" : "Left")} foot, DELTA: {deltaMs} ms at {continuousTime / 1000f} ms");
             }
         }
@@ -85,7 +90,7 @@ public class GaitMetrics : MonoBehaviour
         {
             LeftStepHistory = injectTestData.leftStepHistory;
             RightStepHistory = injectTestData.rightStepHistory;
-            GetValidStepDurations(LeftStepHistory, RightStepHistory, out validLeftDurationsMs, out validRightDurationsMs);
+            GetValidStepDurations(LeftStepHistory, RightStepHistory, out validLeftStrideMs, out validRightStrideMs);
         }
 
         latestSessionData = new SessionData(
@@ -159,8 +164,8 @@ public class GaitMetrics : MonoBehaviour
         
         LeftStepHistory.Clear();
         RightStepHistory.Clear();
-        validLeftDurationsMs.Clear();
-        validRightDurationsMs.Clear();
+        validLeftStrideMs.Clear();
+        validRightStrideMs.Clear();
     }
 
    private float GetMedian(List<float> list)
@@ -192,26 +197,26 @@ public class GaitMetrics : MonoBehaviour
 
     public float GetTemporalSymmetryRatio()
     {
-        if (validLeftDurationsMs.Count < 3 || validRightDurationsMs.Count < 3)
+        if (validLeftStrideMs.Count < 3 || validRightStrideMs.Count < 3)
         {
             Debug.LogError("Not enough data to calculate Temporal Symmetry Ratio!");
             return 1.0f;
         }
 
         // Use Medians to ignore any "weird but plausible" stumbling steps that could skew the average
-        float medianL = GetMedian(validLeftDurationsMs);
-        float medianR = GetMedian(validRightDurationsMs);
+        float medianL = GetMedian(validLeftStrideMs);
+        float medianR = GetMedian(validRightStrideMs);
         if (medianR == 0 || medianL == 0) return 1.0f;
         return medianL / medianR;
     }
 
     public float GetCadence()
     {
-        if (validLeftDurationsMs.Count == 0 && validRightDurationsMs.Count == 0) return 0f;
+        if (validLeftStrideMs.Count == 0 && validRightStrideMs.Count == 0) return 0f;
 
         // Get average stride duration in milliseconds
-        float avgLeftStrideMs = validLeftDurationsMs.Count > 0 ? validLeftDurationsMs.Average() : 0f;
-        float avgRightStrideMs = validRightDurationsMs.Count > 0 ? validRightDurationsMs.Average() : 0f;
+        float avgLeftStrideMs = validLeftStrideMs.Count > 0 ? validLeftStrideMs.Average() : 0f;
+        float avgRightStrideMs = validRightStrideMs.Count > 0 ? validRightStrideMs.Average() : 0f;
 
         // Combine them for the overall average stride
         float overallAvgStrideMs = (avgLeftStrideMs + avgRightStrideMs) / 2f;
@@ -225,19 +230,31 @@ public class GaitMetrics : MonoBehaviour
 
     public float GetStrideTimeVariability()
     {
-        if (validLeftDurationsMs.Count < 3 || validRightDurationsMs.Count < 3) return 0f;
+        if (validLeftStrideMs.Count < 5 || validRightStrideMs.Count < 5) return 0f;
 
-        // CV = (Standard Deviation / Mean) * 100
-        float leftMean = validLeftDurationsMs.Average();
-        float leftStdDev = GetStandardDeviation(validLeftDurationsMs);
-        float leftCV = (leftStdDev / leftMean) * 100f;
+        float leftCV = CalculateCV(FilterOutliers(validLeftStrideMs));
+        float rightCV = CalculateCV(FilterOutliers(validRightStrideMs));
 
-        float rightMean = validRightDurationsMs.Average();
-        float rightStdDev = GetStandardDeviation(validRightDurationsMs);
-        float rightCV = (rightStdDev / rightMean) * 100f;
+        return Mathf.Clamp((leftCV + rightCV) / 2f, 0f, 25f);
+    }
 
-        // Return the average variability of both legs
-        return (leftCV + rightCV) / 2f;
+    private List<float> FilterOutliers(List<float> strides)
+    {
+        float mean = strides.Average();
+        float stdDev = GetStandardDeviation(strides);
+
+        // Discard any stride more than 2 standard deviations from the mean
+        return strides.Where(s => Mathf.Abs(s - mean) <= 2f * stdDev).ToList();
+    }
+
+    private float CalculateCV(List<float> strides)
+    {
+        if (strides.Count < 3) return 0f;
+
+        float mean = strides.Average();
+        float stdDev = GetStandardDeviation(strides);
+
+        return (stdDev / mean) * 100f;
     }
 
     public float GetTemporalPhaseOffset()
@@ -245,43 +262,43 @@ public class GaitMetrics : MonoBehaviour
         if (LeftStepHistory.Count < 3 || RightStepHistory.Count < 3) return 0.5f;
 
         List<float> phaseValues = new List<float>();
+        int rightIndex = 0; // Keep track of where we are in the right sequence
 
-        // For every Left step, find the Right step immediately before and after it
         foreach (var leftStep in LeftStepHistory)
         {
             long tL = leftStep.timeStampUs;
 
-            // Find the Right strike immediately BEFORE this Left strike
-            var prevRight = RightStepHistory.LastOrDefault(r => r.timeStampUs < tL);
-            // Find the Right strike immediately AFTER this Left strike
-            var nextRight = RightStepHistory.FirstOrDefault(r => r.timeStampUs > tL);
-
-            // If we found a valid bracket
-            if (prevRight != null && nextRight != null && prevRight.timeStampUs != 0 && nextRight.timeStampUs != 0)
+            // Advance right pointer until the next step is AFTER the left step
+            while (rightIndex < RightStepHistory.Count - 1 && RightStepHistory[rightIndex + 1].timeStampUs <= tL)
             {
-                long tR1 = prevRight.timeStampUs;
-                long tR2 = nextRight.timeStampUs;
+                rightIndex++;
+            }
 
-                long rightStrideDuration = tR2 - tR1;
-                long offsetDuration = tL - tR1;
+            // Now, RightStepHistory[rightIndex] is prevRight
+            // And RightStepHistory[rightIndex + 1] is nextRight
+            if (rightIndex < RightStepHistory.Count - 1)
+            {
+                var prevRight = RightStepHistory[rightIndex];
+                var nextRight = RightStepHistory[rightIndex + 1];
 
-                // Prevent division by zero and weed out hardware glitches
-                if (rightStrideDuration > 0)
+                if (prevRight.timeStampUs != 0 && nextRight.timeStampUs != 0)
                 {
-                    float phase = (float)offsetDuration / (float)rightStrideDuration;
-                    
-                    // Only accept plausible phase bounds (e.g., between 10% and 90% of the stride)
-                    if (phase > 0.1f && phase < 0.9f)
+                    long rightStrideDuration = nextRight.timeStampUs - prevRight.timeStampUs;
+                    long offsetDuration = tL - prevRight.timeStampUs;
+
+                    if (rightStrideDuration > 0)
                     {
-                        phaseValues.Add(phase);
+                        float phase = (float)offsetDuration / rightStrideDuration;
+                        if (phase > 0.1f && phase < 0.9f)
+                        {
+                            phaseValues.Add(phase);
+                        }
                     }
                 }
             }
         }
 
-        if (phaseValues.Count == 0) return 0.5f; // Default to perfect if math fails
-
-        // Return the median phase offset (0.5 is perfect symmetry)
+        if (phaseValues.Count == 0) return 0.5f;
         var sortedPhases = phaseValues.OrderBy(p => p).ToList();
         return sortedPhases[sortedPhases.Count / 2];
     }
@@ -306,11 +323,11 @@ public class GaitMetrics : MonoBehaviour
     private static void GetValidStepDurations(
     List<StepRecord> leftSteps,
     List<StepRecord> rightSteps,
-    out List<float> validLeftDurationsMs,
-    out List<float> validRightDurationsMs)
+    out List<float> validLeftStrideMs,
+    out List<float> validRightStrideMs)
     {
-        validLeftDurationsMs = ExtractValidDurations(leftSteps);
-        validRightDurationsMs = ExtractValidDurations(rightSteps);
+        validLeftStrideMs = ExtractValidDurations(leftSteps);
+        validRightStrideMs = ExtractValidDurations(rightSteps);
     }
 
     private static List<float> ExtractValidDurations(List<StepRecord> steps)
@@ -321,7 +338,7 @@ public class GaitMetrics : MonoBehaviour
         {
             float deltaMs = (steps[i].timeStampUs - steps[i - 1].timeStampUs) / 1000f;
 
-            if (deltaMs >= 300f && deltaMs <= 1500f)
+            if (deltaMs >= MIN_STRIDE_MS && deltaMs <= MAX_STRIDE_MS)
             {
                 validDurations.Add(deltaMs);
             }

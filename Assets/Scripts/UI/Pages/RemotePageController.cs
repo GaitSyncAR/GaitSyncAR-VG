@@ -49,11 +49,11 @@ public class RemotePageController : PageController
 
     private void ToggleStartStop()
     {
-        // check if either both sensors are connected, or both disconnected
-        // nothing inbetween, we don't want to start the session if only one sensor is connected
-        if (BLEManager.Instance.pendingConnections.Count == 1 && _metronome.isRunning == false)
+        // check if either both sensors are connected
+        // we don't want to start the session if only one sensor is connected
+        if (!BLEManager.Instance.allConnected && _metronome.isRunning == false)
         {
-            PopupManager.Instance.ShowPopup(titleText: "Please Connect/Power-Off Both Sensors.", 
+            PopupManager.Instance.ShowPopup(titleText: "Please Connect Both Sensors.", 
             actionText: "Start Anyways", 
             includeInputField: false, 
             onAction: awnser =>

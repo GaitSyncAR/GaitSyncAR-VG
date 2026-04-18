@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System;
+using System.Globalization;
 
 public class SessionPageController : PageController
 {
@@ -22,7 +23,7 @@ public class SessionPageController : PageController
         showStrideVariability(data.strideTimeVariability);
         showCadence(data.cadence, data.targetCadence);
         showtemporalPhaseOffset(data.temporalPhaseOffset);
-        updateTitle(_sessionData);
+        UpdateTitle(_sessionData);
     }
 
     private void showTemporalSymmetry(float symmetry = 0f)
@@ -115,24 +116,61 @@ public class SessionPageController : PageController
             bar.style.width = Length.Percent(barWidthPercent - paddingPercent);
         }
 
+        
         ResultLabel.text = $"{offset:F2}";
     }
+    private float CalculateStabilityScore(SessionData sessionData)
+    {
+        // 1. Symmetry Penalty (Max 3 points lost)
+        // Range is 0.7 to 1.3. Ideal is 1.0.
+        float symmetryDeviation = Math.Abs(1.0f - sessionData.temporalSymmetryRatio);
+        float symmetryPenalty = 3f * Math.Min(1f, symmetryDeviation / 0.15f);
 
-    private void updateTitle(SessionData sessionData)
+        // 2. Variability Penalty (Max 3 points lost)
+        // Tied to UI's MAX_STRIDE_VARIABILITY (30). 
+        // They lose points progressively up to 30.
+        float variabilityPenalty = 3f * Math.Min(1f, sessionData.strideTimeVariability / MAX_STRIDE_VARIABILITY);
+
+        // 3. Cadence Penalty (Max 2 points lost)
+        // Tied to UI's BPM_TOLERANCE. 
+        // If they are off by more than double the green zone tolerance (10 BPM), they lose both points.
+        float cadencePenalty = 0f;
+        if (sessionData.targetCadence > 0) 
+        {
+            float cadenceDeviation = Math.Abs(sessionData.cadence - sessionData.targetCadence);
+            float maxAllowedDeviation = BPM_TOLERANCE * 2f; 
+            cadencePenalty = 2f * Math.Min(1f, cadenceDeviation / maxAllowedDeviation);
+        }
+
+        // 4. Phase Offset Penalty (Max 2 points lost)
+        float idealPhase = 0.5f;
+        float phaseDeviation = Math.Abs(idealPhase - sessionData.temporalPhaseOffset);
+        // 15% (0.15) deviation from ideal gives full penalty
+        float phasePenalty = 2f * Math.Min(1f, phaseDeviation / 0.15f); 
+
+        // Calculate Total
+        float totalPenalty = symmetryPenalty + variabilityPenalty + cadencePenalty + phasePenalty;
+        float rawScore = 10f - totalPenalty;
+
+        // Clamp between 0 and 10 and optionally round to 1 decimal place for UI aesthetics
+        return (float)Math.Round(Math.Clamp(rawScore, 0f, 10f), 1);
+    }
+
+    private void UpdateTitle(SessionData sessionData)
     {
         var titleLabel = Q<Label>("SessionTitle");
-        int stabilityScore = Mathf.RoundToInt(sessionData.temporalSymmetryRatio * 10);
-        
-        DateTime parsedDate;
-        if (DateTime.TryParse(sessionData.sessionDate, out parsedDate))
-        {
-            titleLabel.text =
-                $"Session Report {parsedDate:dd MMM yyyy • HH:mm} | Stability: {stabilityScore}/10 |";
-        }
-        else
-        {
-            titleLabel.text =
-                $"Session Report {sessionData.sessionDate} | Stability: {stabilityScore}/10 |";
-        }
+        float stabilityScore = CalculateStabilityScore(sessionData);
+        string formattedScore = stabilityScore.ToString("F1");
+
+        string formattedDate = DateTime.TryParseExact(
+            sessionData.sessionDate.Trim(),
+            "yyyy-MM-dd_HH-mm",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out DateTime parsedDate)
+        ? parsedDate.ToString("dd/MM/yyyy • HH:mm")
+        : sessionData.sessionDate;
+
+        titleLabel.text = $"Session Report {formattedDate} | Stability: {formattedScore}/10";
     }
 }

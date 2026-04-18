@@ -34,13 +34,15 @@ public class BLEManager : MonoBehaviour
 
     // Multi-Device Management
     private int targetDeviceCount = 2; // left and right sensors
-    public readonly List<string> pendingConnections = new List<string>();
-    private Dictionary<string, string> activeConnections = new Dictionary<string, string>(); // Maps MAC -> Name
+    private readonly List<string> pendingConnections = new List<string>();
+    private readonly Dictionary<string, string> activeConnections = new Dictionary<string, string>(); // Maps MAC -> Name
     private Coroutine ClockUpkeepLoop = null;
     private bool foundRightSensor = false;
     private bool foundLeftSensor = false;
+    private bool isSynced = false;
     private string leftSensorName = "GaitSync-Left";
     private string rightSensorName = "GaitSync-Right";
+    public bool allConnected = false;
 
     // --------------------------- Events ---------------------------
     // bool = isRightFoot, long = timestamp
@@ -170,6 +172,8 @@ public class BLEManager : MonoBehaviour
         
         string deviceName = activeConnections[address];
         pendingConnections.Add(address);
+        isSynced = false;
+        allConnected = false;
 
         OnDeviceDisconnected?.Invoke(deviceName);
         ConnectNextDeviceInQueue();
@@ -183,6 +187,7 @@ public class BLEManager : MonoBehaviour
 
             // now sync all their clocks together, so we have a common timestamp for features
             SyncDeviceClocks();
+            allConnected = true;
             return;
         }
 
@@ -242,7 +247,7 @@ public class BLEManager : MonoBehaviour
                 switch (messageType)
                 {
                     case 1: // --- STEP EVENT ---
-                        if (dataBytes.Length == 9) 
+                        if (dataBytes.Length == 9 && isSynced)
                         {
                             long timestamp = BitConverter.ToInt64(dataBytes, 1);
                             bool isRightFoot = trueDeviceName.Equals(rightSensorName);
@@ -264,6 +269,7 @@ public class BLEManager : MonoBehaviour
                     case 4: // --- SYNC ACKNOWLEDGMENT EVENT ---
                         if (dataBytes.Length == 9)
                         {
+                            isSynced = true;
                             long confirmedTime = BitConverter.ToInt64(dataBytes, 1);
                             Debug.Log($"------------ SUCCESS: {trueDeviceName} confirmed clock sync at timestamp {confirmedTime} ------------");
 
