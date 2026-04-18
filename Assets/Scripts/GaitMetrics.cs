@@ -2,6 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 public class GaitMetrics : MonoBehaviour
 {
@@ -77,8 +79,15 @@ public class GaitMetrics : MonoBehaviour
         else lastLeftTimestampUs = continuousTime;
     }
 
-    public void SaveSession()
+    public void SaveSession(SessionData injectTestData = null)
     {
+        if (injectTestData != null) 
+        {
+            LeftStepHistory = injectTestData.leftStepHistory;
+            RightStepHistory = injectTestData.rightStepHistory;
+            GetValidStepDurations(LeftStepHistory, RightStepHistory, out validLeftDurationsMs, out validRightDurationsMs);
+        }
+
         latestSessionData = new SessionData(
             System.DateTime.Now.ToString("yyyy-MM-dd_HH-mm"),
             GetTemporalSymmetryRatio(),
@@ -91,8 +100,16 @@ public class GaitMetrics : MonoBehaviour
         );
 
         string json = JsonUtility.ToJson(latestSessionData, true);
-        string filePath = Path.Combine(Application.persistentDataPath, $"Session_{latestSessionData.sessionDate}_{latestSessionData.sessionDate}.json");
+        string folderPath = Path.Combine(Application.persistentDataPath, "sessions");
         
+        if (!Directory.Exists(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
+
+        string safeDate = latestSessionData.sessionDate.Replace(":", "-");
+        string hash = ComputeHash(json).Substring(0, 8);
+        string filePath = Path.Combine(folderPath, $"Session_{hash}_{safeDate}.json");
         File.WriteAllText(filePath, json);
         Debug.Log($"Session Saved to: {filePath}");
 
@@ -232,18 +249,18 @@ public class GaitMetrics : MonoBehaviour
         // For every Left step, find the Right step immediately before and after it
         foreach (var leftStep in LeftStepHistory)
         {
-            long tL = leftStep.timestampUs;
+            long tL = leftStep.timeStampUs;
 
             // Find the Right strike immediately BEFORE this Left strike
-            var prevRight = RightStepHistory.LastOrDefault(r => r.timestampUs < tL);
+            var prevRight = RightStepHistory.LastOrDefault(r => r.timeStampUs < tL);
             // Find the Right strike immediately AFTER this Left strike
-            var nextRight = RightStepHistory.FirstOrDefault(r => r.timestampUs > tL);
+            var nextRight = RightStepHistory.FirstOrDefault(r => r.timeStampUs > tL);
 
             // If we found a valid bracket
-            if (prevRight.timestampUs != 0 && nextRight.timestampUs != 0)
+            if (prevRight != null && nextRight != null && prevRight.timeStampUs != 0 && nextRight.timeStampUs != 0)
             {
-                long tR1 = prevRight.timestampUs;
-                long tR2 = nextRight.timestampUs;
+                long tR1 = prevRight.timeStampUs;
+                long tR2 = nextRight.timeStampUs;
 
                 long rightStrideDuration = tR2 - tR1;
                 long offsetDuration = tL - tR1;
@@ -267,5 +284,49 @@ public class GaitMetrics : MonoBehaviour
         // Return the median phase offset (0.5 is perfect symmetry)
         var sortedPhases = phaseValues.OrderBy(p => p).ToList();
         return sortedPhases[sortedPhases.Count / 2];
+    }
+
+    public static string ComputeHash(string input)
+    {
+        using (SHA256 sha256 = SHA256.Create())
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(input);
+            byte[] hashBytes = sha256.ComputeHash(bytes);
+
+            StringBuilder sb = new StringBuilder();
+            foreach (byte b in hashBytes)
+            {
+                sb.Append(b.ToString("x2"));
+            }
+            return sb.ToString();
+        }
+    }
+
+    // regenerate the valid durations lists from the raw step histories, useful if we want to recalculate metrics with different filters without needing new data
+    private static void GetValidStepDurations(
+    List<StepRecord> leftSteps,
+    List<StepRecord> rightSteps,
+    out List<float> validLeftDurationsMs,
+    out List<float> validRightDurationsMs)
+    {
+        validLeftDurationsMs = ExtractValidDurations(leftSteps);
+        validRightDurationsMs = ExtractValidDurations(rightSteps);
+    }
+
+    private static List<float> ExtractValidDurations(List<StepRecord> steps)
+    {
+        var validDurations = new List<float>();
+
+        for (int i = 1; i < steps.Count; i++)
+        {
+            float deltaMs = (steps[i].timeStampUs - steps[i - 1].timeStampUs) / 1000f;
+
+            if (deltaMs >= 300f && deltaMs <= 1500f)
+            {
+                validDurations.Add(deltaMs);
+            }
+        }
+
+        return validDurations;
     }
 }

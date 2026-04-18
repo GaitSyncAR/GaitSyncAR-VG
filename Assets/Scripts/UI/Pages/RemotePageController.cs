@@ -49,9 +49,29 @@ public class RemotePageController : PageController
 
     private void ToggleStartStop()
     {
-        _metronome.isRunning = !_metronome.isRunning;
-        UIEventBus.EmitRunning(_metronome.isRunning);
-        PlayHaptic();
+        // check if either both sensors are connected, or both disconnected
+        // nothing inbetween, we don't want to start the session if only one sensor is connected
+        if (BLEManager.Instance.pendingConnections.Count == 1 && _metronome.isRunning == false)
+        {
+            PopupManager.Instance.ShowPopup(titleText: "Please Connect/Power-Off Both Sensors.", 
+            actionText: "Start Anyways", 
+            includeInputField: false, 
+            onAction: awnser =>
+            {
+                Debug.Log($"[RemotePageController] Popup result: {awnser}");
+                _metronome.isRunning = !_metronome.isRunning;
+                UIEventBus.EmitRunning(_metronome.isRunning);
+                PlayHaptic();
+            });
+            Debug.LogWarning("Cannot start metronome: Only one sensor is connected.");
+            return;
+        }
+        else
+        {
+            _metronome.isRunning = !_metronome.isRunning;
+            UIEventBus.EmitRunning(_metronome.isRunning);
+            PlayHaptic();
+        }
     }
 
     private void UpdateBPMDisplay(int bpm)

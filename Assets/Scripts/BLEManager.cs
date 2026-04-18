@@ -9,6 +9,21 @@ using UnityEngine.Android;
 
 public class BLEManager : MonoBehaviour
 {
+    // Singleton instance for global access
+    public static BLEManager Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this) 
+        { 
+            Destroy(this.gameObject); 
+            return;
+        } 
+
+        Instance = this; 
+        DontDestroyOnLoad(this.gameObject);
+    }
+
     // --------------------------- Class Fields ---------------------------
     private bool isScanning = false;
 
@@ -19,7 +34,7 @@ public class BLEManager : MonoBehaviour
 
     // Multi-Device Management
     private int targetDeviceCount = 2; // left and right sensors
-    private List<string> pendingConnections = new List<string>();
+    public readonly List<string> pendingConnections = new List<string>();
     private Dictionary<string, string> activeConnections = new Dictionary<string, string>(); // Maps MAC -> Name
     private Coroutine ClockUpkeepLoop = null;
     private bool foundRightSensor = false;

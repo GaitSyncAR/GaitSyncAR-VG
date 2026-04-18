@@ -34,6 +34,9 @@ public class ColourTabController
         bSlider.RegisterValueChangedCallback(_ => ApplyColour());
 
         UIEventBus.ProfileApplied += _ => onDataReload();
+
+        // first time load ui
+        onDataReload();
     }
 
     public void onDataReload()

@@ -2,12 +2,12 @@
 public class StepRecord
 {
     public bool isRightFoot;
-    public long timestampUs; // Microseconds from hardware
+    public long timeStampUs; // Microseconds from hardware
 
     // constructor
-    public StepRecord(bool isRightFoot, long timestampUs)
+    public StepRecord(bool isRightFoot, long timeStampUs)
     {
         this.isRightFoot = isRightFoot;
-        this.timestampUs = timestampUs;
+        this.timeStampUs = timeStampUs;
     }
 }

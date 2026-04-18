@@ -41,7 +41,7 @@ public class PopupManager
     }
 
     // Spawns a popup based on the default template.
-    public void ShowPopup(string titleText, string actionText, Action onCancel, Action<string> onAction, bool includeInputField = true)
+    public void ShowPopup(string titleText, string actionText, Action onCancel = null, Action<string> onAction = null, bool includeInputField = true)
     {
         if (!isInitialized)
         {

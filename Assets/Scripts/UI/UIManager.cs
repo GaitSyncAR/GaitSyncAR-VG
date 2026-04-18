@@ -51,18 +51,7 @@ public class UIManager : MonoBehaviour
         _calibrationCtrl = new CalibrationPageController(uiDocument, _root.Q<VisualElement>("CalibrationPage"), metronome, movementStep, scaleStep);
         _sessionCtrl     = new SessionPageController(uiDocument, _root.Q<VisualElement>("SessionReportPage"));
 
-        // testing session with mock session data
-        SessionData mockData = new SessionData(
-            System.DateTime.Now.ToString("yyyy-MM-dd HH:mm"),
-            0.85f,
-            44,
-            3.46f,
-            0.0f,
-            60,
-            new List<StepRecord>(),
-            new List<StepRecord>()
-        );
-        _sessionCtrl.SetSessionData(mockData);
+        _sessionCtrl.SetSessionData(SessionData.MockDataStable);
 
         BuildNavigation();
 
@@ -80,6 +69,9 @@ public class UIManager : MonoBehaviour
         uiScaler?.ScaleAllLabels();
 
         UIEventBus.ProfileApplied += OnProfileApplied;
+
+        // Testing
+        GaitMetrics.Instance.SaveSession(SessionData.UnstableMockData);
     }
 
     void OnDisable()
@@ -154,6 +146,11 @@ public class UIManager : MonoBehaviour
     // ----------------------------------------------------------
     public void ShowSessionSummary(SessionData sessionData)
     {
+        // we neeed atleast 10 steps to calculate any meaningful metrics, so if we dont have that, we show a popup instead of the report page
+        if(sessionData.leftStepHistory.Count + sessionData.rightStepHistory.Count <= 10) {
+            PopupManager.Instance.ShowPopup(titleText: "Not enough step data recorded (>10). Unable to generate report.", actionText: "OK", includeInputField: false);
+            return;
+        }
         _sessionCtrl.SetSessionData(sessionData);
         ShowPage(_sessionCtrl.PageRoot);
     }

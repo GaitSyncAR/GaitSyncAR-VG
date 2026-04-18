@@ -6,7 +6,7 @@ public class SessionPageController : PageController
 {
     // class fields
     private readonly float STRIDE_VARIABILITY_STABLE_TRESHOLD = 0.33f; // 33% of max variability considered stable
-    private readonly float MAX_STRIDE_VARIABILITY = 10f;
+    private readonly float MAX_STRIDE_VARIABILITY = 30f;
     private readonly float BPM_TOLERANCE = 5f; // BPM tolerance for optimal cadence
     private SessionData _sessionData;
 
@@ -28,9 +28,27 @@ public class SessionPageController : PageController
     private void showTemporalSymmetry(float symmetry = 0f)
     {
         var bar = Q<VisualElement>("TemporalSymmetryFill");
-        var ResultLabel = Q<Label>("TemporalSymmetryResult");
-        bar.style.width = Length.Percent(symmetry * 100);
-        ResultLabel.text = $"{symmetry:F2}";
+        var resultLabel = Q<Label>("TemporalSymmetryResult");
+
+
+        float clamped = Mathf.Clamp(symmetry, 0.7f, 1.3f);
+        float normalized = Mathf.InverseLerp(0.7f, 1.3f, clamped);
+        bar.style.width = Length.Percent(normalized * 100f);
+        resultLabel.text = $"{symmetry:F2}";
+        Color parsedColor;
+
+        if (symmetry >= 0.95f && symmetry <= 1.05f)
+        {
+            // (balanced gait)
+            ColorUtility.TryParseHtmlString("#4CAF50", out parsedColor);
+        }
+        else
+        {
+            // BAD (asymmetry)
+            ColorUtility.TryParseHtmlString("#F44336", out parsedColor);
+        }
+
+        bar.style.backgroundColor = parsedColor;
     }
 
     private void showStrideVariability(float variability = 0f)
@@ -104,6 +122,17 @@ public class SessionPageController : PageController
     {
         var titleLabel = Q<Label>("SessionTitle");
         int stabilityScore = Mathf.RoundToInt(sessionData.temporalSymmetryRatio * 10);
-        titleLabel.text = $"Session Report {sessionData.sessionDate} | Stability: {stabilityScore}/10 |";
+        
+        DateTime parsedDate;
+        if (DateTime.TryParse(sessionData.sessionDate, out parsedDate))
+        {
+            titleLabel.text =
+                $"Session Report {parsedDate:dd MMM yyyy • HH:mm} | Stability: {stabilityScore}/10 |";
+        }
+        else
+        {
+            titleLabel.text =
+                $"Session Report {sessionData.sessionDate} | Stability: {stabilityScore}/10 |";
+        }
     }
 }
