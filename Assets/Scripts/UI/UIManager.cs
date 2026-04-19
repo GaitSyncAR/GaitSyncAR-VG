@@ -71,7 +71,7 @@ public class UIManager : MonoBehaviour
         UIEventBus.ProfileApplied += OnProfileApplied;
 
         // Testing
-        GaitMetrics.Instance.SaveSession(SessionData.UnstableMockData);
+        // GaitMetrics.Instance.SaveSession(SessionData.UnstableMockData);
     }
 
     void OnDisable()

@@ -324,4 +324,31 @@ public class BLEManager : MonoBehaviour
             }
         }
     }
+
+    public void SendMetronomeSync(bool isPlaying, int bpm, int offsetMs, bool isNextBeatRight)
+    {
+        if (activeConnections.Count == 0) return;
+
+        byte[] payload = new byte[6];
+        
+        payload[0] = 5; // Byte 0: Type (5 = Metronome Sync)
+        payload[1] = (byte)(isPlaying ? 1 : 0); // Byte 1: Command (1 = Play, 0 = Stop)
+        payload[2] = (byte)bpm; // Byte 2: BPM (0 to 255)
+        payload[3] = (byte)(isNextBeatRight ? 1 : 0); // tells the nRF if the upcoming beat belongs to the Right sensor
+        payload[4] = (byte)(offsetMs & 0xFF); // Byte 4 - 5: Offset in ms (0 to 65535)
+        payload[5] = (byte)((offsetMs >> 8) & 0xFF); // split into 2 bytes for transmission
+
+        foreach (var mac in activeConnections.Keys)
+        {
+            BluetoothLEHardwareInterface.WriteCharacteristic(
+                mac, 
+                nusServiceUUID, 
+                nusRxCharacteristicUUID, 
+                payload, 
+                payload.Length, 
+                false, 
+                (returnedId) => { /* Success */ }
+            );
+        }
+    }
 }

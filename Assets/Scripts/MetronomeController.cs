@@ -37,16 +37,16 @@ public class MetronomeController : MonoBehaviour
     private void OnEnable()
     {
         // Automatically listen to the UI Event Bus
-        UIEventBus.BPMChanged              += SetBPM;
-        UIEventBus.MetronomeRunningChanged += SetRunning;
+        UIEventBus.BPMChanged              += HandleBPMChanged;
+        UIEventBus.MetronomeRunningChanged += HandleRunningChanged;
         UIEventBus.ColorChanged            += SetColor;
     }
 
     private void OnDisable()
     {
         // unsubscribes to prevent memory leaks
-        UIEventBus.BPMChanged              -= SetBPM;
-        UIEventBus.MetronomeRunningChanged -= SetRunning;
+        UIEventBus.BPMChanged              -= HandleBPMChanged;
+        UIEventBus.MetronomeRunningChanged -= HandleRunningChanged;
         UIEventBus.ColorChanged            -= SetColor;
     }
 
@@ -82,9 +82,21 @@ public class MetronomeController : MonoBehaviour
     // ---------------------------------------------------------- 
     // Public API (For UI & Profiles)
     // ----------------------------------------------------------
+    private void HandleBPMChanged(int newBpm)
+    {
+        bpm = newBpm;
+        
+        if (isRunning) 
+        {
+            SendBleSyncPacket();
+        }
+    }
 
-    public void SetBPM(int newBpm)         => bpm = newBpm;
-    public void SetRunning(bool running)   => isRunning = running;
+    private void HandleRunningChanged(bool runningState)
+    {
+        isRunning = runningState;
+        SendBleSyncPacket();
+    }
 
     public void ApplyProfile(UserProfile profile)
     {
@@ -134,5 +146,31 @@ public class MetronomeController : MonoBehaviour
     public void Move(Vector3 delta)
     {
         transform.position += delta;
+    }
+
+    public void SendBleSyncPacket()
+    {
+        if (BLEManager.Instance == null || !BLEManager.Instance.allConnected) return;
+
+        if (!isRunning)
+        {
+            // Send STOP command
+            BLEManager.Instance.SendMetronomeSync(false, (int)bpm, 0, false);
+            return;
+        }
+
+        // Offset Calculations
+        float msPerBeat = 60000f / bpm;
+        float phaseFraction = Mathf.Repeat(_phase + Mathf.PI / 2f, Mathf.PI) / Mathf.PI;
+        int phaseOffsetMs = Mathf.RoundToInt(phaseFraction * msPerBeat);
+
+        // logic triggers a tick when currentHalfCycle increments.
+        // Even half-cycles (0, 2, 4) mean the arm is swinging RIGHT.
+        // Odd half-cycles (1, 3, 5) mean the arm is swinging LEFT.
+        int currentHalfCycle = (int)((_phase + Mathf.PI / 2f) / Mathf.PI);
+        bool isNextBeatRight = !(currentHalfCycle % 2 == 0);
+
+        // Send PLAY command with the exact offset
+        BLEManager.Instance.SendMetronomeSync(true, (int)bpm, phaseOffsetMs, isNextBeatRight);
     }
 }
