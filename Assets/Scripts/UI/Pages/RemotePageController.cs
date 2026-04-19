@@ -39,7 +39,7 @@ public class RemotePageController : PageController
 
     private void ChangeBPM(int amount)
     {
-        _metronome.bpm = Mathf.Max(0, _metronome.bpm + amount);
+        _metronome.bpm = Math.Clamp(_metronome.bpm + amount, 0, 255f);
         ProfileManager.Instance.currentProfile.bpm = _metronome.bpm;
 
         _currentBpm = (int)_metronome.bpm;

@@ -32,6 +32,9 @@ public class BLEManager : MonoBehaviour
     private readonly string nusTxCharacteristicUUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; // Transmission subscribe characteristic
     private readonly string nusRxCharacteristicUUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; // Receive/Write characteristic
 
+    // Battery tracking
+    private BatteryWarningTracker _batteryTracker = new BatteryWarningTracker(threshold: 20);
+
     // Multi-Device Management
     private int targetDeviceCount = 2; // left and right sensors
     private readonly List<string> pendingConnections = new List<string>();
@@ -40,8 +43,8 @@ public class BLEManager : MonoBehaviour
     private bool foundRightSensor = false;
     private bool foundLeftSensor = false;
     private bool isSynced = false;
-    private string leftSensorName = "GaitSync-Left";
-    private string rightSensorName = "GaitSync-Right";
+    public string leftSensorName = "GaitSync-Left";
+    public string rightSensorName = "GaitSync-Right";
     public bool allConnected = false;
 
     // --------------------------- Events ---------------------------
@@ -261,8 +264,10 @@ public class BLEManager : MonoBehaviour
                         if (dataBytes.Length == 2)
                         {
                             int batteryLevel = dataBytes[1];
-                            // Debug.Log($"Battery Level from {trueDeviceName}: {batteryLevel}%");
+                            // invoke to UI event architecture
                             OnBatteryLevelReceived?.Invoke(trueDeviceName, batteryLevel);
+                            // direct feed to avoid singelton
+                            _batteryTracker.ProcessBatteryLevel(trueDeviceName, batteryLevel);
                         }
                         break;
 

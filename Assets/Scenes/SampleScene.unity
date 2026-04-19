@@ -490,11 +490,6 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
---- !u!23 &594930405 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 5532120270729304140, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
-  m_PrefabInstance: {fileID: 221616749}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &687329261 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8092911142594393520, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
@@ -631,7 +626,7 @@ MonoBehaviour:
   targetMaterial: {fileID: 2100000, guid: 564e6cadbc3efd94983c28b403e71369, type: 2}
   bpm: 120
   isRunning: 0
-  maxAngle: 50
+  maxAngle: 60
   tickSound: {fileID: 8300000, guid: 3aac27682951bda49b4e700f56fe7038, type: 3}
   tickVolume: 1
 --- !u!82 &871263448
@@ -731,11 +726,6 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!4 &887113179 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 5052447915363025023, guid: a7c1ef67318fe8e44bd65c321bffe8ff, type: 3}
-  m_PrefabInstance: {fileID: 221616749}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1375737368
 GameObject:
   m_ObjectHideFlags: 0
@@ -781,6 +771,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3603472d376a9543aeca7729513b86b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BLEManager
+  leftSensorName: GaitSync-Left
+  rightSensorName: GaitSync-Right
+  allConnected: 0
 --- !u!114 &1375737372
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1125,22 +1118,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f61b8ed78896459489c2dd68af88d0ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UISettingsControllerV3
-  uiDocument: {fileID: 773190230}
-  metronomeArm: {fileID: 0}
-  metronomeRenderer: {fileID: 594930405}
-  metronomeBar: {fileID: 732765211}
-  metronomeArmVisuals: {fileID: 887113179}
-  targetMaterial: {fileID: 2100000, guid: 564e6cadbc3efd94983c28b403e71369, type: 2}
-  metronomeObject: {fileID: 687329261}
-  movementStep: 0.5
-  scaleStep: 0.1
-  metronomePreviewTexture: {fileID: 8400000, guid: b0281ebb197c54f47a04371b7a65148a, type: 2}
-  profileRowTemplate: {fileID: 9197481963319205126, guid: 9c543f45019907d4ba32501e5297abda, type: 3}
-  popupTemplate: {fileID: 9197481963319205126, guid: 988c2aa3fdce8484198c9b01b0e7ac6a, type: 3}
-  yesNoPopupTemplate: {fileID: 9197481963319205126, guid: 32d2a59a8c713d046a996aecd1ce181d, type: 3}
-  ankleSensorConnectedIcon: {fileID: 2800000, guid: 5442679c8673e2346887717ef6b4ac52, type: 3}
-  ankleSensorDisconnectedIcon: {fileID: 2800000, guid: 78017c93c2050a245a166dff306a7262, type: 3}
-  _selectedTemplateName: 
 --- !u!114 &1964602101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1267,10 +1244,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ef62953264a48c4cb0dbde0b3423b56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FlawlessGaitUI
-  cameraTransform: {fileID: 330585546}
-  catchUpSpeed: 9.11
-  maxAngle: 18
-  lockHorizon: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
