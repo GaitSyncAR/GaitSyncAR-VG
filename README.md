@@ -23,7 +23,7 @@ As the "orchestrator" of the platform, this application manages the immersive AR
 To open, compile, and deploy this project, you must ensure your development environment meets the following requirements:
 
 * **Unity Editor:** Version **`6000.2.12f1`** is strictly required to ensure compatibility with the project's dependency graph and UI Toolkit assets.
-* **Target Build Support:** Ensure the appropriate build modules (typically Android, depending on your specific Viture neckband/bridge setup) are installed via Unity Hub.
+* **Target Build Support:** Ensure the appropriate build modules (typically Android) are installed via Unity Hub.
 * **AR/VR Packages:** The project relies on specific XR plug-in management tools compatible with the Viture hardware ecosystem.
 
 ---
