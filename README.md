@@ -15,6 +15,7 @@ As the "orchestrator" of the platform, this application manages the immersive AR
   * Stride Time Variability (CV%)
   * Inter-limb Temporal Phase Offset
 * **Post-Session Dashboard:** Automatically generates a comprehensive end-of-session report (`SessionPageController.cs`), complete with an aggregated 10-point "Stability Score" to help patients and clinicians track rehabilitation progress.
+* **Local Configuration Templates:** Allows for multiple setting profiles to be saved locally, enabling quick and convenient switching between presets for different environments to enhance overall ease of use.
 
 ---
 
